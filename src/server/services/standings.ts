@@ -89,11 +89,20 @@ export function sortStandings(
   return sorted.map((row, place) => ({ ...row, place: place + 1 }));
 }
 
-export function buildChessboard(matches: PublicMatch[], teams: { id: UUID; shortName: string }[]) {
-  return teams.map((rowTeam) => ({
-    teamId: rowTeam.id,
-    shortName: rowTeam.shortName,
-    cells: teams.map((columnTeam) => {
+export function buildChessboard(matches: PublicMatch[], teams: { id: UUID; name: string; shortName: string; logoUrl: string | null }[]) {
+  return {
+    columns: teams.map((team) => ({
+      teamId: team.id,
+      name: team.name,
+      shortName: team.shortName,
+      logoUrl: team.logoUrl
+    })),
+    rows: teams.map((rowTeam) => ({
+      teamId: rowTeam.id,
+      name: rowTeam.name,
+      shortName: rowTeam.shortName,
+      logoUrl: rowTeam.logoUrl,
+      cells: teams.map((columnTeam) => {
       if (rowTeam.id === columnTeam.id) {
         return { kind: "self" as const };
       }
@@ -112,5 +121,6 @@ export function buildChessboard(matches: PublicMatch[], teams: { id: UUID; short
       const opponentScore = match.homeTeamId === rowTeam.id ? match.awayScore : match.homeScore;
       return { kind: "score" as const, matchId: match.id, value: `${ownScore}:${opponentScore}` };
     })
-  }));
+    }))
+  };
 }

@@ -295,6 +295,36 @@ button:disabled {
   backdrop-filter: blur(18px);
 }
 
+.standings-section {
+  display: grid;
+  gap: 12px;
+}
+
+.section-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(23, 33, 28, 0.05);
+}
+
+.section-switch button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.section-switch button.active {
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--text);
+  box-shadow: 0 6px 18px rgba(22, 35, 29, 0.08);
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -325,9 +355,68 @@ td {
 }
 
 .team-column {
-  min-width: 104px;
+  min-width: 138px;
   text-align: left;
   font-weight: 700;
+}
+
+.rank-column {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  width: 42px;
+  min-width: 42px;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.team-column {
+  position: sticky;
+  left: 42px;
+  z-index: 3;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 10px 0 18px rgba(22, 35, 29, 0.05);
+}
+
+thead .rank-column,
+thead .team-column {
+  z-index: 5;
+}
+
+.table-team {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.table-team img {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  border-radius: 7px;
+  background: white;
+  border: 1px solid var(--line);
+}
+
+.table-team span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.points-column {
+  font-weight: 900;
+  color: var(--accent);
+}
+
+.positive-stat {
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.negative-stat {
+  color: var(--danger);
+  font-weight: 800;
 }
 
 .chessboard {
@@ -357,6 +446,91 @@ td {
 
 .chess-row .self {
   background: #dfe9e4;
+}
+
+.chessboard-wrap {
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface-soft);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.chess-table {
+  min-width: 640px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.chess-table th,
+.chess-table td {
+  min-width: 58px;
+  height: 56px;
+  text-align: center;
+  vertical-align: middle;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.chess-table th {
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.chess-table th img {
+  width: 26px;
+  height: 26px;
+  display: block;
+  margin: 0 auto 4px;
+  object-fit: contain;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: white;
+}
+
+.chess-table th span {
+  display: block;
+  max-width: 56px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0 auto;
+  font-size: 11px;
+}
+
+.chess-team-sticky {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  min-width: 146px !important;
+  width: 146px;
+  text-align: left !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 10px 0 18px rgba(22, 35, 29, 0.05);
+}
+
+thead .chess-team-sticky {
+  z-index: 6;
+}
+
+.chess-table td.score {
+  color: var(--text);
+  font-weight: 900;
+  background: rgba(15, 143, 98, 0.08);
+}
+
+.chess-table td.empty {
+  background: rgba(23, 33, 28, 0.025);
+}
+
+.chess-table td.self {
+  background:
+    linear-gradient(135deg, transparent 46%, rgba(23, 33, 28, 0.12) 48%, rgba(23, 33, 28, 0.12) 52%, transparent 54%),
+    rgba(23, 33, 28, 0.04);
+}
+
+.chess-table .favorite-cell,
+.chess-table .favorite-column {
+  background-color: rgba(15, 143, 98, 0.1);
 }
 
 .segments {
@@ -405,6 +579,114 @@ td {
   width: 100%;
   display: grid;
   gap: 10px;
+}
+
+.admin h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.native-admin-card {
+  gap: 12px;
+}
+
+.team-picker {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.team-picker button {
+  min-width: 78px;
+  min-height: 68px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  font-weight: 800;
+}
+
+.team-picker button.active {
+  border-color: rgba(15, 143, 98, 0.28);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.team-picker img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.compact-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.compact-list span {
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: rgba(23, 33, 28, 0.05);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.compact-list .inactive {
+  text-decoration: line-through;
+  opacity: 0.55;
+}
+
+.admin-grid-two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.result-form {
+  gap: 12px;
+}
+
+.goal-events {
+  display: grid;
+  gap: 10px;
+}
+
+.goal-event-row {
+  display: grid;
+  grid-template-columns: 0.9fr 0.8fr 1.3fr 1.3fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.iconless-danger {
+  min-height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(179, 38, 30, 0.1);
+  color: var(--danger);
+  padding: 0 10px;
+  font-weight: 800;
+}
+
+.bordered {
+  border: 1px solid var(--line);
 }
 
 input,
@@ -558,5 +840,20 @@ select {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-grid-two,
+  .goal-event-row {
+    grid-template-columns: 1fr;
+  }
+
+  .goal-event-row {
+    gap: 8px;
+  }
+
+  .standings-table {
+    min-width: 600px;
   }
 }

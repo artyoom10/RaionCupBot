@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   AppUser,
+  Player,
   PlayerStatistic,
   PublicMatch,
   RoleAssignment,
@@ -178,6 +179,29 @@ export async function getPlayerStatistics(supabase: SupabaseClient): Promise<Pla
     assists: asNumber(row.assists),
     goalPlusAssist: asNumber(row.goal_plus_assist),
     ownGoals: asNumber(row.own_goals)
+  }));
+}
+
+export async function getPlayers(supabase: SupabaseClient, teamIds?: UUID[]): Promise<Player[]> {
+  let query = supabase
+    .from("players")
+    .select("id, team_id, full_name, is_active")
+    .order("full_name", { ascending: true });
+
+  if (teamIds && teamIds.length > 0) {
+    query = query.in("team_id", teamIds);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return ((data ?? []) as DbRecord[]).map((row) => ({
+    id: asString(row.id),
+    teamId: asString(row.team_id),
+    fullName: asString(row.full_name),
+    isActive: Boolean(row.is_active)
   }));
 }
 
