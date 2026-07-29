@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Fallback team logo">
+  <rect width="128" height="128" rx="18" fill="#f6f7f3"/>
+  <circle cx="64" cy="64" r="42" fill="#ffffff" stroke="#17231d" stroke-width="6"/>
+  <path d="M64 23l13 25 28 4-20 20 5 28-26-13-25 13 5-28-20-20 28-4z" fill="#0f8f62"/>
+  <path d="M43 58h42M45 76h38" stroke="#17231d" stroke-width="6" stroke-linecap="round"/>
+</svg>
