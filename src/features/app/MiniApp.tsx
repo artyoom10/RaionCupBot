@@ -4,6 +4,7 @@ import { BarChart3, CalendarDays, Grid3X3, Shield, Trophy, UserRound } from "luc
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BottomNav, type TabKey } from "@/components/navigation/BottomNav";
 import { Splash } from "@/components/splash/Splash";
+import { TOURNAMENT_ACCENT_COLOR, TOURNAMENT_LOGO_URL } from "@/lib/branding";
 import { formatMoscowDateTime } from "@/lib/date-time/format";
 import { getTelegramWebApp } from "@/lib/telegram/web-app";
 import type { AppUser, PlayerStatistic, PublicMatch, RoleAssignment, StandingRow, Team } from "@/types/domain";
@@ -190,8 +191,8 @@ export function MiniApp() {
         error={null}
         userName={telegramName ?? "гость"}
         appName="Raion Cup"
-        logoUrl="/bot-avatar.svg"
-        primaryColor="#0f8f62"
+        logoUrl={TOURNAMENT_LOGO_URL}
+        primaryColor={TOURNAMENT_ACCENT_COLOR}
         onRetry={() => window.location.reload()}
       />
     );
@@ -200,7 +201,7 @@ export function MiniApp() {
   if (outsideTelegram) {
     return (
       <main className="outside-telegram">
-        <img src="/bot-avatar.svg" alt="Raion Cup Bot" />
+        <img src={TOURNAMENT_LOGO_URL} alt="Raion Cup" />
         <h1>Откройте приложение через Telegram</h1>
         <p>Mini App проверяет подписанные данные Telegram и не работает как публичный сайт.</p>
         {telegramDebug ? <p className="diagnostic">{telegramDebug}</p> : null}
@@ -215,8 +216,8 @@ export function MiniApp() {
         error={bootstrap.error}
         userName={telegramName ?? bootstrap.data?.user.firstName ?? "гость"}
         appName={bootstrap.data?.settings.appShortName ?? "Raion Cup"}
-        logoUrl={bootstrap.data?.favoriteTeam?.logoUrl ?? "/bot-avatar.svg"}
-        primaryColor={bootstrap.data?.favoriteTeam?.primaryColor ?? "#0f8f62"}
+        logoUrl={bootstrap.data?.favoriteTeam?.logoUrl ?? TOURNAMENT_LOGO_URL}
+        primaryColor={bootstrap.data?.favoriteTeam?.primaryColor ?? TOURNAMENT_ACCENT_COLOR}
         onRetry={loadBootstrap}
       />
     );
@@ -247,7 +248,7 @@ export function MiniApp() {
         <>
           <header className="topbar">
             <div className="topbar-brand">
-              <img src="/bot-avatar.svg" alt="Аватар бота" />
+              <img src={TOURNAMENT_LOGO_URL} alt="Логотип турнира" />
               <div>
                 <span>{bootstrap.data.settings.tournamentName}</span>
                 <strong>{favoriteTeam ? favoriteTeam.shortName : "Raion Cup"}</strong>
@@ -312,7 +313,7 @@ function Onboarding(props: {
 }) {
   return (
     <section className="onboarding">
-      <img className="onboarding-avatar" src="/bot-avatar.svg" alt="Raion Cup Bot" />
+      <img className="onboarding-avatar" src={TOURNAMENT_LOGO_URL} alt="Raion Cup" />
       <h1>Выберите любимую команду</h1>
       <div className="team-grid">
         {props.teams.map((team) => (
@@ -479,7 +480,7 @@ function ProfileView(props: {
 }) {
   return (
     <section className="profile">
-      <img src="/bot-avatar.svg" alt="Аватар бота" />
+      <img src={TOURNAMENT_LOGO_URL} alt="Логотип турнира" />
       <h2>
         {props.user.firstName} {props.user.lastName}
       </h2>

@@ -70,10 +70,10 @@ button:disabled {
 }
 
 .splash {
-  color: #f8fff9;
+  color: var(--text);
   background:
-    linear-gradient(180deg, rgba(15, 143, 98, 0.92), rgba(23, 35, 29, 0.96)),
-    #0f8f62;
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 247, 243, 0.98)),
+    #ffffff;
 }
 
 .splash-logo {
@@ -81,7 +81,7 @@ button:disabled {
   height: 118px;
   border-radius: 24px;
   background: #fff;
-  padding: 10px;
+  padding: 6px;
   box-shadow: var(--shadow);
   animation: breathe 1.8s ease-in-out infinite;
 }
@@ -93,7 +93,7 @@ button:disabled {
 
 .splash span {
   min-height: 24px;
-  color: rgba(248, 255, 249, 0.82);
+  color: var(--muted);
 }
 
 .splash button,
@@ -122,7 +122,7 @@ button:disabled {
 }
 
 .splash-error {
-  color: #ffe1dd;
+  color: var(--danger);
 }
 
 .loader {
@@ -130,7 +130,7 @@ button:disabled {
   height: 5px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.24);
+  background: #dfe9e4;
 }
 
 .loader::before {
@@ -138,7 +138,7 @@ button:disabled {
   display: block;
   width: 40%;
   height: 100%;
-  background: white;
+  background: var(--accent);
   border-radius: inherit;
   animation: loading 1.2s ease-in-out infinite;
 }
