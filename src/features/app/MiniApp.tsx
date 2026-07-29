@@ -36,7 +36,8 @@ function allowsDevTelegramMock() {
 export function MiniApp() {
   const [initData, setInitData] = useState("");
   const [telegramName, setTelegramName] = useState<string | null>(null);
-  const [outsideTelegram, setOutsideTelegram] = useState(false);
+  const [outsideTelegram, setOutsideTelegram] = useState<boolean | null>(null);
+  const [telegramDebug, setTelegramDebug] = useState<string | null>(null);
   const [bootstrap, setBootstrap] = useState<RemoteState<BootstrapResponse>>({ ...initialRemoteState, loading: true });
   const [activeTab, setActiveTab] = useState<TabKey>("calendar");
   const [matches, setMatches] = useState<RemoteState<PublicMatch[]>>(initialRemoteState);
@@ -48,14 +49,44 @@ export function MiniApp() {
   const [adminMessage, setAdminMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const webApp = getTelegramWebApp();
-    webApp?.ready();
-    webApp?.expand();
+    let attempts = 0;
+    const maxAttempts = 50;
 
-    const tgInitData = webApp?.initData ?? "";
-    setInitData(tgInitData);
-    setTelegramName(webApp?.initDataUnsafe?.user?.first_name ?? null);
-    setOutsideTelegram(!tgInitData && !allowsDevTelegramMock());
+    const timer = window.setInterval(() => {
+      attempts += 1;
+      const webApp = getTelegramWebApp();
+      const tgInitData = webApp?.initData ?? "";
+
+      if (tgInitData) {
+        webApp?.ready();
+        webApp?.expand();
+        setInitData(tgInitData);
+        setTelegramName(webApp?.initDataUnsafe?.user?.first_name ?? null);
+        setOutsideTelegram(false);
+        setTelegramDebug(null);
+        window.clearInterval(timer);
+        return;
+      }
+
+      if (allowsDevTelegramMock()) {
+        setOutsideTelegram(false);
+        setTelegramDebug(null);
+        window.clearInterval(timer);
+        return;
+      }
+
+      if (attempts >= maxAttempts) {
+        setOutsideTelegram(true);
+        setTelegramDebug(
+          webApp
+            ? "Telegram WebApp найден, но initData пустой. Обычно это значит, что URL открыт не как Web App кнопка текущего бота."
+            : "Telegram WebApp bridge не найден. Проверьте, что Vercel задеплоил последнюю версию и приложение открыто из Mini App."
+        );
+        window.clearInterval(timer);
+      }
+    }, 100);
+
+    return () => window.clearInterval(timer);
   }, []);
 
   const apiFetch = useCallback(
@@ -78,7 +109,7 @@ export function MiniApp() {
   );
 
   const loadBootstrap = useCallback(async () => {
-    if (outsideTelegram) {
+    if (outsideTelegram !== false || (!initData && !allowsDevTelegramMock())) {
       return;
     }
     setBootstrap((state) => ({ ...state, loading: true, error: null }));
@@ -89,7 +120,7 @@ export function MiniApp() {
     } catch (error) {
       setBootstrap({ data: null, loading: false, error: error instanceof Error ? error.message : "Ошибка загрузки" });
     }
-  }, [apiFetch, outsideTelegram]);
+  }, [apiFetch, initData, outsideTelegram]);
 
   useEffect(() => {
     if (!outsideTelegram) {
@@ -152,12 +183,27 @@ export function MiniApp() {
     }
   }
 
+  if (outsideTelegram === null) {
+    return (
+      <Splash
+        loading
+        error={null}
+        userName={telegramName ?? "гость"}
+        appName="Raion Cup"
+        logoUrl="/bot-avatar.svg"
+        primaryColor="#0f8f62"
+        onRetry={() => window.location.reload()}
+      />
+    );
+  }
+
   if (outsideTelegram) {
     return (
       <main className="outside-telegram">
         <img src="/bot-avatar.svg" alt="Raion Cup Bot" />
         <h1>Откройте приложение через Telegram</h1>
         <p>Mini App проверяет подписанные данные Telegram и не работает как публичный сайт.</p>
+        {telegramDebug ? <p className="diagnostic">{telegramDebug}</p> : null}
       </main>
     );
   }

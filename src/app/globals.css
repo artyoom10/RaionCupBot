@@ -61,6 +61,14 @@ button:disabled {
   color: var(--muted);
 }
 
+.outside-telegram .diagnostic {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fff7df;
+  color: #624b00;
+  font-size: 13px;
+}
+
 .splash {
   color: #f8fff9;
   background:
