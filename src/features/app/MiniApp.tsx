@@ -382,8 +382,12 @@ function StandingsView({ state, favoriteTeamId }: { state: RemoteState<StandingR
             <thead>
               <tr>
                 <th>#</th>
-                <th>Команда</th>
+                <th className="team-column">Команда</th>
                 <th>И</th>
+                <th>В</th>
+                <th>Н</th>
+                <th>П</th>
+                <th>МЗ-МП</th>
                 <th>РМ</th>
                 <th>О</th>
               </tr>
@@ -392,8 +396,12 @@ function StandingsView({ state, favoriteTeamId }: { state: RemoteState<StandingR
               {rows.map((row) => (
                 <tr key={row.teamId} className={row.teamId === favoriteTeamId ? "favorite-row" : ""}>
                   <td>{row.place}</td>
-                  <td>{row.shortName}</td>
+                  <td className="team-column">{row.shortName}</td>
                   <td>{row.played}</td>
+                  <td>{row.wins}</td>
+                  <td>{row.draws}</td>
+                  <td>{row.losses}</td>
+                  <td>{row.goalsFor}-{row.goalsAgainst}</td>
                   <td>{row.goalDifference}</td>
                   <td>{row.points}</td>
                 </tr>
