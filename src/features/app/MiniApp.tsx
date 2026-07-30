@@ -59,6 +59,7 @@ type PublicGoalEvent = ResultGoalEvent & {
   sortOrder: number;
   scorerName: string;
   assistName: string | null;
+  minute?: number | null;
 };
 
 const initialRemoteState = { loading: false, data: null, error: null };
@@ -278,6 +279,12 @@ export function MiniApp() {
           .then((data) => setStatistics({ loading: false, data: data.statistics ?? [], error: null }))
           .catch((error) => setStatistics({ loading: false, data: null, error: error instanceof Error ? error.message : "Ошибка загрузки" }));
       }
+      if (selectedTeamIdForProfile && !standings.data && !standings.loading) {
+        setStandings({ loading: true, data: null, error: null });
+        void apiFetch<Record<string, StandingRow[]>>("/api/standings")
+          .then((data) => setStandings({ loading: false, data: data.standings ?? [], error: null }))
+          .catch((error) => setStandings({ loading: false, data: null, error: error instanceof Error ? error.message : "Ошибка загрузки" }));
+      }
     }
   }, [
     apiFetch,
@@ -292,6 +299,8 @@ export function MiniApp() {
     selectedMatchId,
     selectedPlayerId,
     selectedTeamIdForProfile,
+    standings.data,
+    standings.loading,
     statistics.data,
     statistics.loading
   ]);
@@ -308,12 +317,23 @@ export function MiniApp() {
   async function saveFavorite(teamId: string | null) {
     setSavingFavorite(true);
     try {
-      await apiFetch("/api/me/favorite-team", {
+      const data = await apiFetch<{ user: AppUser }>("/api/me/favorite-team", {
         method: "PATCH",
         body: JSON.stringify({ teamId })
       });
-      await loadBootstrap();
-      setActiveTab("calendar");
+      setSelectedTeamId(data.user.favoriteTeamId);
+      setBootstrap((state) =>
+        state.data
+          ? {
+              ...state,
+              data: {
+                ...state.data,
+                user: data.user,
+                favoriteTeam: state.data.teams.find((team) => team.id === data.user.favoriteTeamId) ?? null
+              }
+            }
+          : state
+      );
     } finally {
       setSavingFavorite(false);
     }
@@ -328,7 +348,7 @@ export function MiniApp() {
         appName="Raion Cup"
         logoUrl={TOURNAMENT_LOGO_URL}
         primaryColor={TOURNAMENT_ACCENT_COLOR}
-        onRetry={() => window.location.reload()}
+        onRetry={loadBootstrap}
       />
     );
   }
@@ -351,8 +371,8 @@ export function MiniApp() {
         error={bootstrap.error}
         userName={telegramName ?? bootstrap.data?.user.firstName ?? "гость"}
         appName={bootstrap.data?.settings.appShortName ?? "Raion Cup"}
-        logoUrl={bootstrap.data?.favoriteTeam?.logoUrl ?? TOURNAMENT_LOGO_URL}
-        primaryColor={bootstrap.data?.favoriteTeam?.primaryColor ?? TOURNAMENT_ACCENT_COLOR}
+        logoUrl={TOURNAMENT_LOGO_URL}
+        primaryColor={TOURNAMENT_ACCENT_COLOR}
         onRetry={loadBootstrap}
       />
     );
@@ -404,6 +424,7 @@ export function MiniApp() {
             matches={matches.data ?? []}
             players={players.data ?? []}
             statistics={statistics.data ?? []}
+            standings={standings.data ?? []}
             events={events.data ?? []}
             onMatchOpen={openMatch}
             onPlayerOpen={openPlayer}
@@ -681,6 +702,12 @@ function ResultMeta({ match }: { match: PublicMatch }) {
   return <small className="result-meta">Результат заполнил: {resultAuthor} · {resultDate}</small>;
 }
 
+function formatGoalsWithPenalties(stat: PlayerStatistic | undefined) {
+  const goals = stat?.goals ?? 0;
+  const penalties = stat?.penalties ?? 0;
+  return penalties > 0 ? `${goals} (${penalties})` : String(goals);
+}
+
 function TeamSide({ name, logoUrl, onClick }: { name: string; logoUrl: string | null; onClick: () => void }) {
   return (
     <button type="button" className="team-side" onClick={(event) => {
@@ -908,8 +935,8 @@ function MatchDetailScreen({
 
   return (
     <section className="detail-screen">
-      <div className="match-hero-card">
-        <span>{dateParts.date}{dateParts.time ? ` · ${dateParts.time}` : ""}</span>
+        <div className="match-hero-card">
+        <span className="detail-match-date">{dateParts.date}{dateParts.time ? ` · ${dateParts.time}` : ""}</span>
         <div className="detail-score">
           <button type="button" onClick={() => onTeamOpen(match.homeTeamId)}>
             <TeamLogo logoUrl={match.homeLogoUrl} name={match.homeTeamName} />
@@ -949,6 +976,7 @@ function TeamProfileScreen({
   matches,
   players,
   statistics,
+  standings,
   events,
   onMatchOpen,
   onPlayerOpen
@@ -957,12 +985,14 @@ function TeamProfileScreen({
   matches: PublicMatch[];
   players: AdminPlayer[];
   statistics: PlayerStatistic[];
+  standings: StandingRow[];
   events: PublicGoalEvent[];
   onMatchOpen: (matchId: string) => void;
   onPlayerOpen: (playerId: string) => void;
 }) {
   const teamMatches = matches.filter((match) => match.homeTeamId === team.id || match.awayTeamId === team.id);
-  const roster = players.filter((player) => player.teamId === team.id);
+  const roster = players.filter((player) => player.teamId === team.id).sort((a, b) => a.fullName.localeCompare(b.fullName, "ru"));
+  const standing = standings.find((row) => row.teamId === team.id);
   const goals = events.filter((event) => event.teamId === team.id && event.eventType !== "own_goal").length;
   const ownGoals = events.filter((event) => event.teamId === team.id && event.eventType === "own_goal").length;
   const against = teamMatches.reduce((sum, match) => {
@@ -979,6 +1009,7 @@ function TeamProfileScreen({
         <div>
           <h1>{team.name}</h1>
           <span>{team.city ?? "Команда турнира"}</span>
+          {standing ? <strong className="team-place-badge">{standing.place} место</strong> : null}
         </div>
       </div>
       <div className="profile-metrics">
@@ -989,17 +1020,24 @@ function TeamProfileScreen({
       </div>
       <section className="detail-card">
         <h2>Заявка</h2>
-        <div className="roster-list">
+        <div className="roster-table" role="table" aria-label="Заявка команды">
+          <div className="roster-table-head" role="row">
+            <span>Игрок</span>
+            <span>Г</span>
+            <span>П</span>
+          </div>
           {roster.map((player) => {
             const stat = statistics.find((item) => item.playerId === player.id);
             return (
-              <button type="button" key={player.id} onClick={() => onPlayerOpen(player.id)}>
+              <button type="button" key={player.id} className="roster-table-row" onClick={() => onPlayerOpen(player.id)}>
                 <span>{player.fullName}</span>
-                <small>{stat?.goals ?? 0} гол · {stat?.assists ?? 0} пас</small>
+                <small>{formatGoalsWithPenalties(stat)}</small>
+                <small>{stat?.assists ?? 0}</small>
               </button>
             );
           })}
         </div>
+        <p className="roster-legend">Г — голы, П — голевые передачи</p>
       </section>
       <section className="detail-card">
         <h2>Матчи</h2>
@@ -1049,9 +1087,54 @@ function PlayerProfileScreen({
       </div>
       <section className="detail-card">
         <h2>Матчи с голами</h2>
-        <DetailMatchList matches={scoredMatches} onMatchOpen={onMatchOpen} />
+        <PlayerGoalMatchList matches={scoredMatches} events={scoredEvents} onMatchOpen={onMatchOpen} />
       </section>
     </section>
+  );
+}
+
+function PlayerGoalMatchList({
+  matches,
+  events,
+  onMatchOpen
+}: {
+  matches: PublicMatch[];
+  events: PublicGoalEvent[];
+  onMatchOpen: (matchId: string) => void;
+}) {
+  if (matches.length === 0) {
+    return <p className="muted">Матчей с голами пока нет.</p>;
+  }
+
+  return (
+    <div className="player-goal-match-list">
+      {matches.map((match) => {
+        const matchEvents = events.filter((event) => event.matchId === match.id);
+        const dateParts = formatMatchDateParts(match.kickoffAt);
+        const minutes = matchEvents
+          .map((event) => event.minute)
+          .filter((minute): minute is number => typeof minute === "number")
+          .map((minute) => `${minute}'`);
+
+        return (
+          <button type="button" key={match.id} className="player-goal-match-card" onClick={() => onMatchOpen(match.id)}>
+            <span className="player-goal-date">{dateParts.date}{dateParts.time ? ` · ${dateParts.time}` : ""}</span>
+            <div className="player-goal-score">
+              <div>
+                <TeamLogo logoUrl={match.homeLogoUrl} name={match.homeTeamName} />
+                <span>{match.homeTeamShortName}</span>
+              </div>
+              <strong>{match.homeScore === null ? "- : -" : `${match.homeScore}:${match.awayScore}`}</strong>
+              <div>
+                <TeamLogo logoUrl={match.awayLogoUrl} name={match.awayTeamName} />
+                <span>{match.awayTeamShortName}</span>
+              </div>
+            </div>
+            <small>Голы: {matchEvents.length}{minutes.length > 0 ? ` · ${minutes.join(", ")}` : ""}</small>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -1072,10 +1155,20 @@ function DetailMatchList({ matches, onMatchOpen }: { matches: PublicMatch[]; onM
   );
 }
 
-function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
+function Modal({
+  title,
+  children,
+  onClose,
+  className = ""
+}: {
+  title: string;
+  children: React.ReactNode;
+  onClose: () => void;
+  className?: string;
+}) {
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={title}>
-      <section className="modal-sheet">
+      <section className={`modal-sheet ${className}`}>
         <header>
           <h2>{title}</h2>
           <button type="button" onClick={onClose} aria-label="Закрыть">
@@ -1094,7 +1187,7 @@ function ProfileView(props: {
   selectedTeamId: string | null;
   saving: boolean;
   onSelect: (teamId: string | null) => void;
-  onSave: () => void;
+  onSave: () => Promise<void> | void;
 }) {
   const [isFavoritePickerOpen, setIsFavoritePickerOpen] = useState(false);
   const currentTeam = props.teams.find((team) => team.id === props.selectedTeamId) ?? null;
@@ -1113,8 +1206,8 @@ function ProfileView(props: {
         </div>
       </button>
       {isFavoritePickerOpen ? (
-        <Modal title="Любимая команда" onClose={() => setIsFavoritePickerOpen(false)}>
-          <div className="team-picker team-picker-grid">
+        <Modal title="Любимая команда" className="favorite-picker-modal" onClose={() => setIsFavoritePickerOpen(false)}>
+          <div className="team-picker team-picker-grid favorite-picker-list">
             {props.teams.map((team) => (
               <button
                 key={team.id}
@@ -1135,8 +1228,8 @@ function ProfileView(props: {
               className="primary"
               disabled={props.saving}
               type="button"
-              onClick={() => {
-                void props.onSave();
+              onClick={async () => {
+                await props.onSave();
                 setIsFavoritePickerOpen(false);
               }}
             >
@@ -1642,7 +1735,7 @@ function AdminView(props: {
         </Modal>
       ) : null}
       {editingResultMatchId && selectedResultMatch ? (
-        <Modal title="Результат матча" onClose={() => setEditingResultMatchId(null)}>
+        <Modal title="Результат матча" className="result-modal" onClose={() => setEditingResultMatchId(null)}>
           <form
             className="result-form"
             onSubmit={(event) => {

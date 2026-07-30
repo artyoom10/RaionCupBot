@@ -369,14 +369,12 @@ thead .team-column {
 .match-date {
   width: fit-content;
   justify-self: center;
-  border-radius: 999px;
-  background: rgba(23, 33, 28, 0.045);
   color: #56615b;
   font-weight: 800;
   text-align: center;
   display: grid;
   gap: 1px;
-  padding: 5px 12px;
+  padding: 1px 0;
 }
 
 .match-date strong {
@@ -670,15 +668,15 @@ thead .team-column {
 }
 
 .chess-table {
-  min-width: 640px;
+  min-width: 560px;
   border-collapse: separate;
   border-spacing: 0;
 }
 
 .chess-table th,
 .chess-table td {
-  min-width: 58px;
-  height: 56px;
+  min-width: 50px;
+  height: 48px;
   text-align: center;
   vertical-align: middle;
   border-right: 1px solid var(--line);
@@ -699,8 +697,8 @@ thead .team-column {
   display: grid;
   place-items: center;
   align-content: center;
-  gap: 4px;
-  padding: 4px;
+  gap: 2px;
+  padding: 3px;
 }
 
 .chess-table th button:active {
@@ -708,8 +706,8 @@ thead .team-column {
 }
 
 .chess-table th .team-logo {
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   display: block;
   margin: 0 auto 4px;
   object-fit: contain;
@@ -720,19 +718,19 @@ thead .team-column {
 
 .chess-table th span {
   display: block;
-  max-width: 56px;
+  max-width: 50px;
   overflow: hidden;
   text-overflow: ellipsis;
   margin: 0 auto;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .chess-team-sticky {
   position: sticky;
   left: 0;
   z-index: 4;
-  min-width: 104px !important;
-  width: 104px;
+  min-width: 92px !important;
+  width: 92px;
   text-align: center !important;
   background: rgba(255, 255, 255, 0.96) !important;
   box-shadow: 10px 0 18px rgba(22, 35, 29, 0.05);
@@ -893,16 +891,22 @@ thead .chess-team-sticky {
 
 .match-hero-card {
   display: grid;
-  gap: 14px;
-  padding: 18px;
+  gap: 12px;
+  padding: 16px;
   text-align: center;
 }
 
-.match-hero-card > span,
+.detail-match-date,
 .match-hero-card p,
 .muted {
   margin: 0;
   color: var(--muted);
+}
+
+.detail-match-date {
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.25;
 }
 
 .detail-score {
@@ -1008,6 +1012,18 @@ thead .chess-team-sticky {
   color: var(--muted);
 }
 
+.team-place-badge {
+  width: fit-content;
+  display: inline-grid;
+  margin-top: 8px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 900;
+}
+
 .profile-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1042,6 +1058,140 @@ thead .chess-team-sticky {
 .detail-match-list {
   display: grid;
   gap: 8px;
+}
+
+.roster-table {
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.roster-table-head,
+.roster-table-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 52px 42px;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 10px;
+}
+
+.roster-table-head {
+  color: var(--muted);
+  background: rgba(23, 33, 28, 0.045);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.roster-table-head span:first-child {
+  text-align: left;
+}
+
+.roster-table-head span:not(:first-child),
+.roster-table-row small {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.roster-table-row {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.roster-table-row > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 750;
+}
+
+.roster-table-row small {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.roster-legend {
+  margin: -2px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.player-goal-match-list {
+  display: grid;
+  gap: 8px;
+}
+
+.player-goal-match-card {
+  width: 100%;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.68);
+  color: inherit;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  text-align: center;
+}
+
+.player-goal-date {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.player-goal-score {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.player-goal-score > div {
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  font-weight: 850;
+}
+
+.player-goal-score .team-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+}
+
+.player-goal-score span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.player-goal-score strong {
+  height: 42px;
+  border-radius: 14px;
+  background: rgba(23, 33, 28, 0.08);
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.player-goal-match-card > small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .roster-list button {
@@ -1181,12 +1331,13 @@ thead .chess-team-sticky {
 }
 
 .admin-result-score > strong {
-  min-height: 48px;
+  height: 48px;
   border-radius: 16px;
   background: rgba(23, 33, 28, 0.08);
   display: grid;
   place-items: center;
   font-size: 21px;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1329,6 +1480,7 @@ thead .chess-team-sticky {
 }
 
 .result-form {
+  width: 100%;
   gap: 12px;
 }
 
@@ -1409,6 +1561,27 @@ thead .chess-team-sticky {
   backdrop-filter: blur(24px) saturate(1.4);
 }
 
+.favorite-picker-modal {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  max-height: min(74dvh, 640px);
+  overflow: hidden;
+}
+
+.favorite-picker-list {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2px 2px 8px;
+}
+
+.favorite-picker-modal .modal-actions {
+  padding-top: 2px;
+}
+
+.result-modal {
+  width: min(560px, 100%);
+}
+
 .modal-sheet > header {
   position: sticky;
   top: -16px;
@@ -1459,7 +1632,29 @@ thead .chess-team-sticky {
 }
 
 .modal-score {
+  width: 100%;
   grid-template-columns: minmax(0, 1fr) 88px minmax(0, 1fr);
+}
+
+.result-modal .modal-match-title {
+  width: 100%;
+}
+
+.result-modal .admin-result-score {
+  width: 100%;
+}
+
+.result-modal .admin-result-score > div {
+  justify-items: center;
+}
+
+.result-modal .admin-result-score > strong {
+  width: 88px;
+  justify-self: center;
+}
+
+.result-modal .primary[type="submit"] {
+  width: 100%;
 }
 
 .result-team-actions {
