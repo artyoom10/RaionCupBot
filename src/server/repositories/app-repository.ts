@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   AppUser,
+  GoalEventType,
   Player,
   PlayerStatistic,
   PublicMatch,
@@ -202,6 +203,57 @@ export async function getPlayers(supabase: SupabaseClient, teamIds?: UUID[]): Pr
     teamId: asString(row.team_id),
     fullName: asString(row.full_name),
     isActive: Boolean(row.is_active)
+  }));
+}
+
+export async function getPublicGoalEvents(supabase: SupabaseClient) {
+  const { data, error } = await supabase
+    .from("match_goal_events")
+    .select("id, match_id, team_id, scorer_player_id, assist_player_id, event_type, sort_order")
+    .order("sort_order", { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const events = ((data ?? []) as DbRecord[]).map((row) => ({
+    id: asString(row.id),
+    matchId: asString(row.match_id),
+    teamId: asString(row.team_id),
+    scorerPlayerId: asString(row.scorer_player_id),
+    assistPlayerId: asNullableString(row.assist_player_id),
+    eventType: asString(row.event_type) as GoalEventType,
+    sortOrder: asNumber(row.sort_order)
+  }));
+
+  const playerIds = Array.from(
+    new Set(events.flatMap((event) => [event.scorerPlayerId, event.assistPlayerId]).filter((value): value is string => Boolean(value)))
+  );
+
+  const playersById = new Map<string, Pick<Player, "id" | "teamId" | "fullName">>();
+  if (playerIds.length > 0) {
+    const { data: playersData, error: playersError } = await supabase
+      .from("players")
+      .select("id, team_id, full_name")
+      .in("id", playerIds);
+
+    if (playersError) {
+      throw new Error(playersError.message);
+    }
+
+    for (const row of (playersData ?? []) as DbRecord[]) {
+      playersById.set(asString(row.id), {
+        id: asString(row.id),
+        teamId: asString(row.team_id),
+        fullName: asString(row.full_name)
+      });
+    }
+  }
+
+  return events.map((event) => ({
+    ...event,
+    scorerName: playersById.get(event.scorerPlayerId)?.fullName ?? "Игрок",
+    assistName: event.assistPlayerId ? playersById.get(event.assistPlayerId)?.fullName ?? null : null
   }));
 }
 

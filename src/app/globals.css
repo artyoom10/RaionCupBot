@@ -235,8 +235,61 @@ button:disabled {
   gap: 12px;
 }
 
+.calendar-screen {
+  display: grid;
+  gap: 18px;
+}
+
+.calendar-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.calendar-head span {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.calendar-head h1 {
+  margin: 2px 0 0;
+  font-size: 34px;
+  line-height: 1;
+}
+
+.past-toggle {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(23, 33, 28, 0.06);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.past-toggle input {
+  width: 18px;
+  min-height: 18px;
+  accent-color: var(--accent);
+}
+
+.match-group {
+  display: grid;
+  gap: 10px;
+}
+
+.match-group h2 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 18px;
+}
+
 .match-card,
-.stat-list article,
+.stat-card,
 .profile,
 .admin form {
   background: var(--surface-soft);
@@ -251,6 +304,45 @@ button:disabled {
 .favorite-row {
   background: rgba(15, 143, 98, 0.07);
   box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.match-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.match-card-main {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.match-date {
+  color: var(--muted);
+  font-weight: 800;
+  text-align: center;
+}
+
+.match-team-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+}
+
+.match-team-actions button {
+  min-height: 40px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.36);
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.match-team-actions button + button {
+  border-left: 1px solid var(--line);
 }
 
 .match-meta,
@@ -328,13 +420,13 @@ button:disabled {
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 560px;
+  min-width: 500px;
   font-variant-numeric: tabular-nums;
 }
 
 th,
 td {
-  padding: 11px 8px;
+  padding: 9px 6px;
   text-align: center;
   border-bottom: 1px solid var(--line);
   white-space: nowrap;
@@ -351,11 +443,11 @@ tbody tr:last-child td {
 }
 
 td {
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .team-column {
-  min-width: 138px;
+  min-width: 86px;
   text-align: left;
   font-weight: 700;
 }
@@ -364,14 +456,14 @@ td {
   position: sticky;
   left: 0;
   z-index: 3;
-  width: 42px;
-  min-width: 42px;
+  width: 30px;
+  min-width: 30px;
   background: rgba(255, 255, 255, 0.94);
 }
 
 .team-column {
   position: sticky;
-  left: 42px;
+  left: 30px;
   z-index: 3;
   background: rgba(255, 255, 255, 0.94);
   box-shadow: 10px 0 18px rgba(22, 35, 29, 0.05);
@@ -383,15 +475,21 @@ thead .team-column {
 }
 
 .table-team {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
+  font-weight: 800;
 }
 
 .table-team img {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   flex: 0 0 auto;
   object-fit: contain;
   border-radius: 7px;
@@ -501,8 +599,8 @@ thead .team-column {
   position: sticky;
   left: 0;
   z-index: 4;
-  min-width: 146px !important;
-  width: 146px;
+  min-width: 104px !important;
+  width: 104px;
   text-align: left !important;
   background: rgba(255, 255, 255, 0.96) !important;
   box-shadow: 10px 0 18px rgba(22, 35, 29, 0.05);
@@ -554,7 +652,14 @@ thead .chess-team-sticky {
   color: var(--accent);
 }
 
-.stat-list article {
+.stat-card {
+  width: 100%;
+  border: 0;
+  text-align: left;
+  color: inherit;
+}
+
+.stat-card {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -564,6 +669,203 @@ thead .chess-team-sticky {
   display: block;
   margin-top: 3px;
   color: var(--muted);
+}
+
+.detail-header {
+  max-width: 760px;
+  margin: 0 auto 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.detail-header button {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(15, 143, 98, 0.1);
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+}
+
+.detail-screen {
+  max-width: 760px;
+  margin: 0 auto;
+  display: grid;
+  gap: 12px;
+}
+
+.match-hero-card,
+.detail-card,
+.team-profile-hero,
+.admin-action-card {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface-soft);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.match-hero-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  text-align: center;
+}
+
+.match-hero-card > span,
+.match-hero-card p,
+.muted {
+  margin: 0;
+  color: var(--muted);
+}
+
+.detail-score {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.detail-score button {
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  font-weight: 900;
+}
+
+.detail-score img {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: white;
+  border: 1px solid var(--line);
+}
+
+.detail-score b {
+  min-width: 76px;
+  border-radius: 16px;
+  padding: 13px 14px;
+  background: rgba(23, 33, 28, 0.08);
+  font-size: 26px;
+  font-variant-numeric: tabular-nums;
+}
+
+.detail-card {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+}
+
+.detail-card h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.event-line,
+.roster-list button,
+.detail-match-list button {
+  width: 100%;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.68);
+  color: inherit;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  text-align: left;
+}
+
+.event-line img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.event-line span,
+.roster-list button,
+.detail-match-list button {
+  min-width: 0;
+}
+
+.event-line small,
+.roster-list small,
+.detail-match-list span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.team-profile-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+}
+
+.team-profile-hero img {
+  width: 70px;
+  height: 70px;
+  object-fit: contain;
+  border-radius: 16px;
+  background: white;
+  border: 1px solid var(--line);
+}
+
+.team-profile-hero h1 {
+  margin: 0 0 4px;
+  font-size: 24px;
+}
+
+.team-profile-hero span {
+  color: var(--muted);
+}
+
+.profile-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.profile-metrics span {
+  min-height: 70px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  font-size: 12px;
+}
+
+.profile-metrics b {
+  display: block;
+  color: var(--text);
+  font-size: 22px;
+}
+
+.roster-list,
+.detail-match-list {
+  display: grid;
+  gap: 8px;
+}
+
+.link-button {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  padding: 0;
+  font-weight: 800;
 }
 
 .stat-list b {
@@ -584,6 +886,48 @@ thead .chess-team-sticky {
 .admin h2 {
   margin: 0;
   font-size: 18px;
+}
+
+.admin-action-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.admin-action-card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.admin-match-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-match-list article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.admin-match-list span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.admin-match-list button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  padding: 0 12px;
+  font-weight: 800;
 }
 
 .native-admin-card {
@@ -687,6 +1031,109 @@ thead .chess-team-sticky {
 
 .bordered {
   border: 1px solid var(--line);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  align-items: end;
+  padding: 12px;
+  background: rgba(23, 33, 28, 0.28);
+}
+
+.modal-sheet {
+  width: min(760px, 100%);
+  max-height: min(82vh, 780px);
+  overflow: auto;
+  margin: 0 auto;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 24px 70px rgba(22, 35, 29, 0.28);
+  backdrop-filter: blur(24px) saturate(1.4);
+}
+
+.modal-sheet > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.modal-sheet h2 {
+  margin: 0;
+}
+
+.modal-sheet > header button {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(23, 33, 28, 0.07);
+  color: var(--text);
+  display: grid;
+  place-items: center;
+}
+
+.modal-actions {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+}
+
+.modal-match-title {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(23, 33, 28, 0.05);
+}
+
+.modal-match-title span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.result-team-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.result-team-actions section {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.result-team-actions section > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.result-team-actions img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.result-team-actions button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: grid;
+  place-items: center;
 }
 
 input,
