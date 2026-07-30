@@ -262,6 +262,12 @@ export function MiniApp() {
           .then((data) => setEvents({ loading: false, data: data.events ?? [], error: null }))
           .catch((error) => setEvents({ loading: false, data: null, error: error instanceof Error ? error.message : "Ошибка загрузки" }));
       }
+      if (!statistics.data && !statistics.loading) {
+        setStatistics({ loading: true, data: null, error: null });
+        void apiFetch<Record<string, PlayerStatistic[]>>("/api/statistics")
+          .then((data) => setStatistics({ loading: false, data: data.statistics ?? [], error: null }))
+          .catch((error) => setStatistics({ loading: false, data: null, error: error instanceof Error ? error.message : "Ошибка загрузки" }));
+      }
     }
   }, [
     apiFetch,
@@ -275,7 +281,9 @@ export function MiniApp() {
     players.loading,
     selectedMatchId,
     selectedPlayerId,
-    selectedTeamIdForProfile
+    selectedTeamIdForProfile,
+    statistics.data,
+    statistics.loading
   ]);
 
   useEffect(() => {
@@ -483,6 +491,7 @@ export function MiniApp() {
                   setStandings(initialRemoteState);
                   setChessboard(initialRemoteState);
                   setStatistics(initialRemoteState);
+                  setEvents(initialRemoteState);
                 }}
               />
             ) : null}
@@ -828,8 +837,9 @@ function StatisticsView({ state, onPlayerOpen }: { state: RemoteState<PlayerStat
             ))}
           </div>
           <div className="stat-list">
-            {rows.map((row) => (
+            {rows.map((row, index) => (
               <button type="button" className="stat-card" key={`${row.playerId}-${tab}`} onClick={() => onPlayerOpen(row.playerId)}>
+                <span className="stat-rank">{index + 1}</span>
                 <div>
                   <strong>{row.playerName}</strong>
                   <span>{row.teamName}</span>
@@ -901,7 +911,7 @@ function MatchDetailScreen({
               <TeamLogo logoUrl={team?.logoUrl ?? null} name={team?.name ?? "Команда"} />
               <span>
                 <strong>{event.scorerName}</strong>
-                {event.assistName ? <small>пас: {event.assistName}</small> : <small>{event.eventType === "penalty" ? "пенальти" : event.eventType === "own_goal" ? "автогол" : "без ассиста"}</small>}
+                {event.assistName ? <small>{event.assistName}</small> : <small>{event.eventType === "penalty" ? "пенальти" : event.eventType === "own_goal" ? "автогол" : "без ассиста"}</small>}
               </span>
             </button>
           );
@@ -1639,7 +1649,7 @@ function AdminView(props: {
                       <TeamLogo logoUrl={team?.logoUrl ?? null} name={team?.name ?? "Команда"} />
                       <div>
                         <strong>{event.eventType === "penalty" ? "Пенальти" : event.eventType === "own_goal" ? "Автогол" : "Гол"} · {scorer?.fullName ?? "Игрок"}</strong>
-                        <span>{assistant ? `пас: ${assistant.fullName}` : "без ассиста"}</span>
+                        <span>{assistant ? assistant.fullName : "без ассиста"}</span>
                       </div>
                       <button type="button" className="iconless-danger" onClick={() => setGoalEvents((current) => current.filter((_, eventIndex) => eventIndex !== index))}>
                         Удалить

@@ -757,15 +757,41 @@ thead .chess-team-sticky {
 }
 
 .stat-card {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
   align-items: center;
+  gap: 10px;
 }
 
 .stat-list span {
   display: block;
   margin-top: 3px;
   color: var(--muted);
+}
+
+.stat-rank {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(23, 33, 28, 0.06);
+  color: var(--muted);
+  display: grid !important;
+  place-items: center;
+  margin: 0 !important;
+  font-size: 13px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-card div {
+  min-width: 0;
+}
+
+.stat-card strong,
+.stat-card div span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .detail-header {
@@ -952,6 +978,22 @@ thead .chess-team-sticky {
 .detail-match-list {
   display: grid;
   gap: 8px;
+}
+
+.roster-list button {
+  justify-content: space-between;
+}
+
+.roster-list button > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.roster-list small {
+  flex: 0 0 auto;
+  text-align: right;
 }
 
 .link-button {
