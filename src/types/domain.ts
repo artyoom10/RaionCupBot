@@ -1,6 +1,6 @@
 export type UUID = string;
 
-export type UserRole = "super_admin" | "moderator" | "team_admin";
+export type UserRole = "super_admin" | "moderator";
 
 export type MatchStatus = "scheduled" | "published";
 
@@ -112,7 +112,6 @@ export type VerifiedTelegramInitData = {
 
 export type Permission =
   | "view_admin_tab"
-  | "manage_own_team_players"
   | "manage_any_players"
   | "manage_schedule"
   | "publish_result"

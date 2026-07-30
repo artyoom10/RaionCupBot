@@ -21,7 +21,3 @@ set tournament_name = excluded.tournament_name,
 -- Назначение модератора:
 -- insert into public.user_roles (user_id, role, team_id)
 -- values ('UUID_ПОЛЬЗОВАТЕЛЯ', 'moderator', null);
-
--- Назначение администратора команды:
--- insert into public.user_roles (user_id, role, team_id)
--- values ('UUID_ПОЛЬЗОВАТЕЛЯ', 'team_admin', 'UUID_КОМАНДЫ');

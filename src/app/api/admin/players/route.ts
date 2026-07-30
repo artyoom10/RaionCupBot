@@ -13,21 +13,17 @@ export async function GET(request: NextRequest) {
     const context = await createRequestContext(request);
     if (
       !can(context.roles, "manage_any_players") &&
-      !can(context.roles, "publish_result") &&
-      !context.roles.some((role) => role.role === "team_admin")
+      !can(context.roles, "publish_result")
     ) {
       throw new ForbiddenError();
     }
 
     const requestedTeamId = new URL(request.url).searchParams.get("teamId");
-    const adminTeamIds = context.roles.filter((role) => role.role === "team_admin" && role.teamId).map((role) => role.teamId as string);
     const teamIds = can(context.roles, "manage_any_players") || can(context.roles, "publish_result")
       ? requestedTeamId
         ? [requestedTeamId]
         : undefined
-      : requestedTeamId && adminTeamIds.includes(requestedTeamId)
-        ? [requestedTeamId]
-        : adminTeamIds;
+      : [];
 
     const players = await getPlayers(context.supabase, teamIds);
     return ok({ players });
@@ -40,7 +36,7 @@ export async function POST(request: NextRequest) {
   try {
     const context = await createRequestContext(request);
     const payload = playerMutationSchema.parse(await request.json());
-    if (!can(context.roles, "manage_any_players") && !can(context.roles, "manage_own_team_players", payload.teamId)) {
+    if (!can(context.roles, "manage_any_players")) {
       throw new ForbiddenError();
     }
     const player = await upsertPlayer(context.supabase, {
@@ -59,6 +55,9 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const context = await createRequestContext(request);
+    if (!can(context.roles, "manage_any_players")) {
+      throw new ForbiddenError();
+    }
     const playerId = uuidSchema.parse(new URL(request.url).searchParams.get("playerId"));
     const result = await callDeactivateOrDeletePlayer(context.supabase, context.user.id, playerId);
     return ok({ result });

@@ -9,6 +9,14 @@ export function formatMoscowDateTime(value: string | null) {
   return format(new Date(value), "dd.MM.yyyy HH:mm");
 }
 
+export function formatShortDate(value: string | null) {
+  if (!value) {
+    return "";
+  }
+
+  return format(new Date(value), "dd.MM.yyyy");
+}
+
 export function formatMatchDateParts(value: string | null) {
   if (!value) {
     return {

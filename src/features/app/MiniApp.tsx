@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { BottomNav, type TabKey } from "@/components/navigation/BottomNav";
 import { Splash } from "@/components/splash/Splash";
 import { TOURNAMENT_ACCENT_COLOR, TOURNAMENT_LOGO_URL } from "@/lib/branding";
-import { formatMatchDateParts, formatMoscowDateTime } from "@/lib/date-time/format";
+import { formatMatchDateParts, formatMoscowDateTime, formatShortDate } from "@/lib/date-time/format";
 import { getTelegramWebApp } from "@/lib/telegram/web-app";
 import type { AppUser, PlayerStatistic, PublicMatch, RoleAssignment, StandingRow, Team } from "@/types/domain";
 
@@ -74,6 +74,16 @@ function createIdempotencyKey() {
   const values = new Uint32Array(4);
   globalThis.crypto?.getRandomValues(values);
   return `client-${Array.from(values).join("-")}`;
+}
+
+function toDateTimeLocalInput(value: string | null) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+  const offsetMs = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
 }
 
 function TeamLogo({ logoUrl, name, className = "" }: { logoUrl: string | null; name: string; className?: string }) {
@@ -481,7 +491,6 @@ export function MiniApp() {
             {activeTab === "admin" ? (
               <AdminView
                 permissions={bootstrap.data.permissions}
-                roles={bootstrap.data.roles}
                 teams={bootstrap.data.teams}
                 message={adminMessage}
                 onMessage={setAdminMessage}
@@ -649,7 +658,10 @@ function MatchGroup({
                   <strong>{match.homeScore === null ? "- : -" : `${match.homeScore}:${match.awayScore}`}</strong>
                   <TeamSide name={match.awayTeamShortName} logoUrl={match.awayLogoUrl} onClick={() => onTeamOpen(match.awayTeamId)} />
                 </div>
-                <footer>{match.status === "published" ? "Матч завершён" : "Матч ожидается"}</footer>
+                <footer>
+                  <span>{match.status === "published" ? "Матч завершён" : "Матч ожидается"}</span>
+                  <ResultMeta match={match} />
+                </footer>
               </div>
             </article>
           );
@@ -657,6 +669,16 @@ function MatchGroup({
       </div>
     </section>
   );
+}
+
+function ResultMeta({ match }: { match: PublicMatch }) {
+  const resultAuthor = match.updatedByName ?? match.publishedByName;
+  const resultDate = formatShortDate(match.updatedAt ?? match.publishedAt);
+  if (match.status !== "published" || !resultAuthor || !resultDate) {
+    return null;
+  }
+
+  return <small className="result-meta">Результат заполнил: {resultAuthor} · {resultDate}</small>;
 }
 
 function TeamSide({ name, logoUrl, onClick }: { name: string; logoUrl: string | null; onClick: () => void }) {
@@ -900,6 +922,7 @@ function MatchDetailScreen({
           </button>
         </div>
         <p>{match.status === "published" ? "Матч завершён" : "Матч ожидается"}</p>
+        <ResultMeta match={match} />
       </div>
       <section className="detail-card">
         <h2>События</h2>
@@ -1128,14 +1151,13 @@ function ProfileView(props: {
 
 function AdminView(props: {
   permissions: Record<string, boolean>;
-  roles: RoleAssignment[];
   teams: Team[];
   message: string | null;
   onMessage: (message: string | null) => void;
   apiFetch: <T>(path: string, init?: RequestInit) => Promise<T>;
   onDataChanged: () => void;
 }) {
-  const { apiFetch, onMessage, permissions, roles, teams } = props;
+  const { apiFetch, onMessage, permissions, teams } = props;
   const [teamName, setTeamName] = useState("");
   const [teamShortName, setTeamShortName] = useState("");
   const [playerLastName, setPlayerLastName] = useState("");
@@ -1144,6 +1166,7 @@ function AdminView(props: {
   const [kickoffAt, setKickoffAt] = useState("");
   const [homeTeamId, setHomeTeamId] = useState(props.teams[0]?.id ?? "");
   const [awayTeamId, setAwayTeamId] = useState(props.teams[1]?.id ?? "");
+  const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
   const [adminMatches, setAdminMatches] = useState<PublicMatch[]>([]);
   const [players, setPlayers] = useState<AdminPlayer[]>([]);
   const [adminLoading, setAdminLoading] = useState(false);
@@ -1164,12 +1187,7 @@ function AdminView(props: {
   const canPublishResult = Boolean(permissions.publish_result);
   const canReplaceResult = Boolean(permissions.replace_result);
   const canManageAnyPlayers = Boolean(permissions.manage_any_players);
-  const canManageOwnTeamPlayers = Boolean(permissions.manage_own_team_players);
-  const teamAdminIds = useMemo(() => roles.filter((role) => role.role === "team_admin" && role.teamId).map((role) => role.teamId as string), [roles]);
-  const playerTeams = useMemo(
-    () => (canManageAnyPlayers ? teams : teams.filter((team) => teamAdminIds.includes(team.id))),
-    [canManageAnyPlayers, teams, teamAdminIds]
-  );
+  const playerTeams = useMemo(() => (canManageAnyPlayers ? teams : []), [canManageAnyPlayers, teams]);
   const selectedResultMatch = adminMatches.find((match) => match.id === resultMatchId) ?? null;
   const resultTeams = selectedResultMatch
     ? teams.filter((team) => team.id === selectedResultMatch.homeTeamId || team.id === selectedResultMatch.awayTeamId)
@@ -1187,7 +1205,7 @@ function AdminView(props: {
         requests.push(Promise.resolve({ matches: [] }));
       }
 
-      if (canManageAnyPlayers || canManageOwnTeamPlayers || canPublishResult || canReplaceResult) {
+      if (canManageAnyPlayers || canPublishResult || canReplaceResult) {
         requests.push(apiFetch<{ players: AdminPlayer[] }>("/api/admin/players"));
       } else {
         requests.push(Promise.resolve({ players: [] }));
@@ -1205,7 +1223,6 @@ function AdminView(props: {
     }
   }, [
     canManageAnyPlayers,
-    canManageOwnTeamPlayers,
     canManageSchedule,
     canPublishResult,
     canReplaceResult,
@@ -1270,9 +1287,10 @@ function AdminView(props: {
   }
 
   async function openResultEditor(matchId: string) {
+    const match = adminMatches.find((item) => item.id === matchId);
     setResultMatchId(matchId);
     setEditingResultMatchId(matchId);
-    setResultType("normal");
+    setResultType(match?.resultType ?? "normal");
     setGoalEvents([]);
     try {
       const data = await apiFetch<{ events: PublicGoalEvent[] }>("/api/events");
@@ -1301,6 +1319,7 @@ function AdminView(props: {
       await apiFetch("/api/admin/matches", {
         method: "POST",
         body: JSON.stringify({
+          id: editingMatchId ?? undefined,
           round: 1,
           kickoffAt: kickoffAt ? new Date(kickoffAt).toISOString() : null,
           venue: null,
@@ -1309,12 +1328,21 @@ function AdminView(props: {
         })
       });
       setIsMatchModalOpen(false);
-      onMessage("Матч добавлен");
+      setEditingMatchId(null);
+      onMessage(editingMatchId ? "Матч обновлён" : "Матч добавлен");
       props.onDataChanged();
       await loadAdminData();
     } catch (error) {
       onMessage(error instanceof Error ? error.message : "Не удалось добавить матч");
     }
+  }
+
+  function openMatchModal(match?: PublicMatch) {
+    setEditingMatchId(match?.id ?? null);
+    setKickoffAt(toDateTimeLocalInput(match?.kickoffAt ?? null));
+    setHomeTeamId(match?.homeTeamId ?? props.teams[0]?.id ?? "");
+    setAwayTeamId(match?.awayTeamId ?? props.teams[1]?.id ?? "");
+    setIsMatchModalOpen(true);
   }
 
   function openGoalEventModal(teamId: string) {
@@ -1376,7 +1404,7 @@ function AdminView(props: {
       return;
     }
     if (selectedResultMatch.status === "published" && !props.permissions.replace_result) {
-      onMessage("Опубликованный результат может менять только главный администратор");
+      onMessage("Нет прав на изменение опубликованного результата");
       return;
     }
 
@@ -1411,6 +1439,9 @@ function AdminView(props: {
   return (
     <section className="admin">
       {props.message ? <div className="notice">{props.message}</div> : null}
+      {!canManageSchedule && !canPublishResult && !canReplaceResult && !canManageAnyPlayers && !props.permissions.manage_teams ? (
+        <div className="notice">Для вашей роли пока нет доступных действий в админке.</div>
+      ) : null}
       {props.permissions.manage_teams ? (
         <form
           onSubmit={(event) => {
@@ -1426,7 +1457,7 @@ function AdminView(props: {
           </button>
         </form>
       ) : null}
-      {props.permissions.manage_any_players || props.permissions.manage_own_team_players ? (
+      {props.permissions.manage_any_players ? (
         <section className="admin-action-card">
           <h2>Заявка</h2>
           <p>Добавляйте игроков в заявку команды одним действием.</p>
@@ -1450,7 +1481,7 @@ function AdminView(props: {
         <section className="admin-action-card">
           <h2>Матч</h2>
           <p>Выберите дату и две команды в отдельном окне.</p>
-          <button className="primary" type="button" onClick={() => setIsMatchModalOpen(true)}>
+          <button className="primary" type="button" onClick={() => openMatchModal()}>
             <Plus size={18} />
             Создать матч
           </button>
@@ -1460,6 +1491,7 @@ function AdminView(props: {
         <section className="admin-action-card">
           <h2>Результат</h2>
           {adminLoading ? <div className="notice">Загрузка матчей и заявок...</div> : null}
+          {!adminLoading && adminMatches.length === 0 ? <div className="notice">Матчи пока не созданы.</div> : null}
           <div className="admin-match-list">
             {adminMatches.map((match) => (
               <article key={match.id} className="admin-result-card">
@@ -1478,6 +1510,11 @@ function AdminView(props: {
                 <button type="button" onClick={() => void openResultEditor(match.id)}>
                   Редактировать результат
                 </button>
+                {canManageSchedule ? (
+                  <button type="button" className="ghost bordered" onClick={() => openMatchModal(match)}>
+                    Редактировать матч
+                  </button>
+                ) : null}
               </article>
             ))}
           </div>
@@ -1546,7 +1583,13 @@ function AdminView(props: {
         </Modal>
       ) : null}
       {isMatchModalOpen ? (
-        <Modal title="Создать матч" onClose={() => setIsMatchModalOpen(false)}>
+        <Modal
+          title={editingMatchId ? "Редактировать матч" : "Создать матч"}
+          onClose={() => {
+            setIsMatchModalOpen(false);
+            setEditingMatchId(null);
+          }}
+        >
           <form
             className="native-admin-card"
             onSubmit={(event) => {
@@ -1581,11 +1624,18 @@ function AdminView(props: {
               </label>
             </div>
             <div className="modal-actions">
-              <button className="ghost bordered" type="button" onClick={() => setIsMatchModalOpen(false)}>
+              <button
+                className="ghost bordered"
+                type="button"
+                onClick={() => {
+                  setIsMatchModalOpen(false);
+                  setEditingMatchId(null);
+                }}
+              >
                 Отмена
               </button>
               <button className="primary" type="submit">
-                Создать
+                {editingMatchId ? "Сохранить" : "Создать"}
               </button>
             </div>
           </form>

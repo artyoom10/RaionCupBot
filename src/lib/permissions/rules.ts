@@ -9,21 +9,21 @@ export function hasRole(roles: RoleAssignment[], role: RoleAssignment["role"], t
   });
 }
 
-export function can(roles: RoleAssignment[], permission: Permission, teamId?: UUID): boolean {
+export function can(roles: RoleAssignment[], permission: Permission, _teamId?: UUID): boolean {
+  void _teamId;
+
   if (hasRole(roles, "super_admin")) {
     return true;
   }
 
   switch (permission) {
     case "view_admin_tab":
-      return roles.length > 0;
-    case "manage_own_team_players":
-      return Boolean(teamId && hasRole(roles, "team_admin", teamId));
-    case "publish_result":
       return hasRole(roles, "moderator");
-    case "manage_any_players":
+    case "publish_result":
     case "manage_schedule":
     case "replace_result":
+      return hasRole(roles, "moderator");
+    case "manage_any_players":
     case "manage_teams":
     case "view_audit_log":
       return false;
@@ -33,7 +33,6 @@ export function can(roles: RoleAssignment[], permission: Permission, teamId?: UU
 export function visiblePermissions(roles: RoleAssignment[], teamId?: UUID): Record<Permission, boolean> {
   return {
     view_admin_tab: can(roles, "view_admin_tab", teamId),
-    manage_own_team_players: can(roles, "manage_own_team_players", teamId),
     manage_any_players: can(roles, "manage_any_players", teamId),
     manage_schedule: can(roles, "manage_schedule", teamId),
     publish_result: can(roles, "publish_result", teamId),

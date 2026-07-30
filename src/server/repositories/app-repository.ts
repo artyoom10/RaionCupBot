@@ -98,10 +98,15 @@ export async function getUserRoles(supabase: SupabaseClient, userId: UUID): Prom
     throw new Error(error.message);
   }
 
-  return ((data ?? []) as DbRecord[]).map((row) => ({
-    role: asString(row.role) as RoleAssignment["role"],
-    teamId: asNullableString(row.team_id)
-  }));
+  return ((data ?? []) as DbRecord[])
+    .filter((row) => {
+      const role = asString(row.role);
+      return role === "super_admin" || role === "moderator";
+    })
+    .map((row) => ({
+      role: asString(row.role) as RoleAssignment["role"],
+      teamId: null
+    }));
 }
 
 export async function getTeams(supabase: SupabaseClient): Promise<Team[]> {

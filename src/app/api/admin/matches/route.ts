@@ -17,8 +17,8 @@ export async function POST(request: NextRequest) {
       venue: payload.venue ?? null,
       home_team_id: payload.homeTeamId,
       away_team_id: payload.awayTeamId,
-      created_by: context.user.id,
-      updated_by: context.user.id
+      updated_by: context.user.id,
+      ...(payload.id ? {} : { created_by: context.user.id })
     });
     return ok({ match });
   } catch (error) {

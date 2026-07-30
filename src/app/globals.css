@@ -60,7 +60,7 @@ button:disabled {
   display: grid;
   place-items: center;
   align-content: center;
-  gap: 14px;
+  gap: 18px;
   padding: 28px;
   text-align: center;
 }
@@ -147,10 +147,10 @@ button:disabled {
 }
 
 .loader {
-  width: 34px;
-  height: 34px;
+  width: 42px;
+  height: 42px;
   border-radius: 999px;
-  border: 3px solid #dfe9e4;
+  border: 4px solid #dfe9e4;
   border-top-color: var(--accent);
   animation: spin 850ms linear infinite;
 }
@@ -336,6 +336,21 @@ button:disabled {
   background: rgba(15, 143, 98, 0.12);
 }
 
+.rank-column,
+.team-column {
+  background: #ffffff !important;
+}
+
+.favorite-row .rank-column,
+.favorite-row .team-column {
+  background: #dff1ea !important;
+}
+
+thead .rank-column,
+thead .team-column {
+  background: #ffffff !important;
+}
+
 .match-card {
   padding: 0;
   overflow: hidden;
@@ -347,25 +362,31 @@ button:disabled {
   background: transparent;
   color: inherit;
   display: grid;
-  gap: 9px;
-  padding: 12px 14px 11px;
+  gap: 8px;
+  padding: 10px 13px;
 }
 
 .match-date {
-  color: var(--muted);
+  width: fit-content;
+  justify-self: center;
+  border-radius: 999px;
+  background: rgba(23, 33, 28, 0.045);
+  color: #56615b;
   font-weight: 800;
   text-align: center;
   display: grid;
   gap: 1px;
+  padding: 5px 12px;
 }
 
 .match-date strong {
-  color: var(--muted);
+  color: #56615b;
 }
 
 .match-date small {
   color: var(--text);
-  font-size: 16px;
+  font-size: 15px;
+  line-height: 1.1;
 }
 
 .match-meta,
@@ -377,8 +398,21 @@ button:disabled {
   font-weight: 800;
 }
 
+.match-card footer span,
+.result-meta {
+  display: block;
+}
+
+.result-meta {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
 .score-row {
-  min-height: 74px;
+  min-height: 68px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 76px minmax(0, 1fr);
   align-items: center;
@@ -386,12 +420,13 @@ button:disabled {
 }
 
 .score-row > strong {
-  min-height: 50px;
+  height: 48px;
   border-radius: 16px;
   background: rgba(23, 33, 28, 0.08);
   display: grid;
   place-items: center;
   font-size: 23px;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
@@ -414,8 +449,8 @@ button:disabled {
 }
 
 .team-side .team-logo {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 999px;
 }
 
@@ -530,15 +565,15 @@ td {
   width: 34px;
   min-width: 34px;
   max-width: 34px;
-  background: rgba(255, 255, 255, 0.94);
+  background: #ffffff;
 }
 
 .team-column {
   position: sticky;
   left: 34px;
   z-index: 3;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 10px 0 18px rgba(22, 35, 29, 0.05);
+  background: #ffffff;
+  box-shadow: 12px 0 18px rgba(22, 35, 29, 0.08);
 }
 
 thead .rank-column,
@@ -654,6 +689,24 @@ thead .team-column {
   background: rgba(255, 255, 255, 0.88);
 }
 
+.chess-table th button {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+  padding: 4px;
+}
+
+.chess-table th button:active {
+  background: rgba(15, 143, 98, 0.08);
+}
+
 .chess-table th .team-logo {
   width: 26px;
   height: 26px;
@@ -661,7 +714,7 @@ thead .team-column {
   margin: 0 auto 4px;
   object-fit: contain;
   border-radius: 7px;
-  border: 1px solid var(--line);
+  border: 0;
   background: white;
 }
 
@@ -680,7 +733,7 @@ thead .team-column {
   z-index: 4;
   min-width: 104px !important;
   width: 104px;
-  text-align: left !important;
+  text-align: center !important;
   background: rgba(255, 255, 255, 0.96) !important;
   box-shadow: 10px 0 18px rgba(22, 35, 29, 0.05);
   border-right: 0 !important;
@@ -688,12 +741,17 @@ thead .team-column {
 
 tbody .chess-team-sticky {
   border: 0 !important;
-  background: transparent !important;
+  background: rgba(255, 255, 255, 0.96) !important;
   box-shadow: none;
+}
+
+.chess-table .favorite-row .chess-team-sticky {
+  background: #dff1ea !important;
 }
 
 thead .chess-team-sticky {
   z-index: 6;
+  vertical-align: middle;
 }
 
 .chess-table td.score {
@@ -958,20 +1016,26 @@ thead .chess-team-sticky {
 
 .profile-metrics span {
   min-height: 70px;
+  padding: 10px 6px;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.72);
   color: var(--muted);
   display: grid;
   place-items: center;
+  align-content: center;
+  gap: 3px;
   text-align: center;
   font-size: 12px;
+  line-height: 1.15;
 }
 
 .profile-metrics b {
   display: block;
   color: var(--text);
   font-size: 22px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .roster-list,
