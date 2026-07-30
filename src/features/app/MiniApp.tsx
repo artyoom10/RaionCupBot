@@ -693,6 +693,17 @@ function StandingsView({
           {(rows) => (
             <div className="table-wrap standings-table-wrap">
               <table className="standings-table">
+                <colgroup>
+                  <col className="col-rank" />
+                  <col className="col-team" />
+                  <col className="col-small" />
+                  <col className="col-small" />
+                  <col className="col-small" />
+                  <col className="col-small" />
+                  <col className="col-goals" />
+                  <col className="col-small" />
+                  <col className="col-small" />
+                </colgroup>
                 <thead>
                   <tr>
                     <th className="rank-column">#</th>
@@ -1117,7 +1128,8 @@ function AdminView(props: {
   const { apiFetch, onMessage, permissions, roles, teams } = props;
   const [teamName, setTeamName] = useState("");
   const [teamShortName, setTeamShortName] = useState("");
-  const [playerName, setPlayerName] = useState("");
+  const [playerLastName, setPlayerLastName] = useState("");
+  const [playerFirstName, setPlayerFirstName] = useState("");
   const [playerTeamId, setPlayerTeamId] = useState(props.teams[0]?.id ?? "");
   const [kickoffAt, setKickoffAt] = useState("");
   const [homeTeamId, setHomeTeamId] = useState(props.teams[0]?.id ?? "");
@@ -1130,6 +1142,8 @@ function AdminView(props: {
   const [goalEvents, setGoalEvents] = useState<ResultGoalEvent[]>([]);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
   const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
+  const [isPlayerTeamPickerOpen, setIsPlayerTeamPickerOpen] = useState(false);
+  const [isGoalTeamPickerOpen, setIsGoalTeamPickerOpen] = useState(false);
   const [editingResultMatchId, setEditingResultMatchId] = useState<string | null>(null);
   const [eventTeamId, setEventTeamId] = useState<string>("");
   const [eventType, setEventType] = useState<ResultGoalEvent["eventType"]>("goal");
@@ -1150,6 +1164,8 @@ function AdminView(props: {
   const resultTeams = selectedResultMatch
     ? teams.filter((team) => team.id === selectedResultMatch.homeTeamId || team.id === selectedResultMatch.awayTeamId)
     : [];
+  const selectedPlayerTeam = playerTeams.find((team) => team.id === playerTeamId) ?? null;
+  const selectedEventTeam = resultTeams.find((team) => team.id === eventTeamId) ?? null;
 
   const loadAdminData = useCallback(async () => {
     setAdminLoading(true);
@@ -1221,18 +1237,21 @@ function AdminView(props: {
   }
 
   async function createPlayer() {
-    if (!playerTeamId || !playerName.trim()) {
-      onMessage("Выберите команду и введите имя игрока");
+    const fullName = [playerLastName.trim(), playerFirstName.trim()].filter(Boolean).join(" ");
+    if (!playerTeamId || !playerLastName.trim() || !playerFirstName.trim()) {
+      onMessage("Выберите команду, введите фамилию и имя игрока");
       return;
     }
 
     try {
       await apiFetch("/api/admin/players", {
         method: "POST",
-        body: JSON.stringify({ teamId: playerTeamId, fullName: playerName })
+        body: JSON.stringify({ teamId: playerTeamId, fullName })
       });
-      setPlayerName("");
+      setPlayerLastName("");
+      setPlayerFirstName("");
       setIsPlayerModalOpen(false);
+      setIsPlayerTeamPickerOpen(false);
       onMessage("Игрок сохранён");
       await loadAdminData();
     } catch (error) {
@@ -1298,6 +1317,7 @@ function AdminView(props: {
     setEventType("goal");
     setEventScorerId(scorerPlayerId);
     setEventAssistId("");
+    setIsGoalTeamPickerOpen(false);
   }
 
   function addPreparedGoalEvent() {
@@ -1315,6 +1335,7 @@ function AdminView(props: {
       }
     ]);
     setEventTeamId("");
+    setIsGoalTeamPickerOpen(false);
   }
 
   function previewScore() {
@@ -1453,7 +1474,13 @@ function AdminView(props: {
         </section>
       ) : null}
       {isPlayerModalOpen ? (
-        <Modal title="Добавить игрока" onClose={() => setIsPlayerModalOpen(false)}>
+        <Modal
+          title="Добавить игрока"
+          onClose={() => {
+            setIsPlayerModalOpen(false);
+            setIsPlayerTeamPickerOpen(false);
+          }}
+        >
           <form
             className="native-admin-card"
             onSubmit={(event) => {
@@ -1461,17 +1488,44 @@ function AdminView(props: {
               void createPlayer();
             }}
           >
-            <div className="team-picker">
-              {playerTeams.map((team) => (
-                <button key={team.id} type="button" className={playerTeamId === team.id ? "active" : ""} onClick={() => setPlayerTeamId(team.id)}>
-                  <TeamLogo logoUrl={team.logoUrl} name={team.name} />
-                  <span>{team.shortName}</span>
-                </button>
-              ))}
+            <button className="selected-team-control" type="button" onClick={() => setIsPlayerTeamPickerOpen((value) => !value)}>
+              <TeamLogo logoUrl={selectedPlayerTeam?.logoUrl ?? null} name={selectedPlayerTeam?.name ?? "Команда"} />
+              <span>
+                <small>Выбрать команду</small>
+                <strong>{selectedPlayerTeam?.shortName ?? "Не выбрана"}</strong>
+              </span>
+            </button>
+            {isPlayerTeamPickerOpen ? (
+              <div className="team-picker team-picker-grid">
+                {playerTeams.map((team) => (
+                  <button
+                    key={team.id}
+                    type="button"
+                    className={playerTeamId === team.id ? "active" : ""}
+                    onClick={() => {
+                      setPlayerTeamId(team.id);
+                      setIsPlayerTeamPickerOpen(false);
+                    }}
+                  >
+                    <TeamLogo logoUrl={team.logoUrl} name={team.name} />
+                    <span>{team.shortName}</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            <div className="admin-grid-two">
+              <input value={playerLastName} onChange={(event) => setPlayerLastName(event.target.value)} placeholder="Фамилия" />
+              <input value={playerFirstName} onChange={(event) => setPlayerFirstName(event.target.value)} placeholder="Имя" />
             </div>
-            <input value={playerName} onChange={(event) => setPlayerName(event.target.value)} placeholder="Фамилия и имя" />
             <div className="modal-actions">
-              <button className="ghost bordered" type="button" onClick={() => setIsPlayerModalOpen(false)}>
+              <button
+                className="ghost bordered"
+                type="button"
+                onClick={() => {
+                  setIsPlayerModalOpen(false);
+                  setIsPlayerTeamPickerOpen(false);
+                }}
+              >
                 Отмена
               </button>
               <button className="primary" type="submit">
@@ -1603,7 +1657,13 @@ function AdminView(props: {
         </Modal>
       ) : null}
       {eventTeamId ? (
-        <Modal title="Добавить гол" onClose={() => setEventTeamId("")}>
+        <Modal
+          title="Добавить событие"
+          onClose={() => {
+            setEventTeamId("");
+            setIsGoalTeamPickerOpen(false);
+          }}
+        >
           <form
             className="native-admin-card"
             onSubmit={(event) => {
@@ -1611,6 +1671,38 @@ function AdminView(props: {
               addPreparedGoalEvent();
             }}
           >
+            <button className="selected-team-control" type="button" onClick={() => setIsGoalTeamPickerOpen((value) => !value)}>
+              <TeamLogo logoUrl={selectedEventTeam?.logoUrl ?? null} name={selectedEventTeam?.name ?? "Команда"} />
+              <span>
+                <small>Команда события</small>
+                <strong>{selectedEventTeam?.shortName ?? "Выбрать команду"}</strong>
+              </span>
+            </button>
+            {isGoalTeamPickerOpen ? (
+              <div className="team-picker team-picker-grid">
+                {resultTeams.map((team) => (
+                  <button
+                    key={team.id}
+                    type="button"
+                    className={eventTeamId === team.id ? "active" : ""}
+                    onClick={() => {
+                      const scorerPlayerId = firstPlayerId(team.id);
+                      if (!scorerPlayerId) {
+                        onMessage("Для выбранной команды нет игроков в заявке");
+                        return;
+                      }
+                      setEventTeamId(team.id);
+                      setEventScorerId(scorerPlayerId);
+                      setEventAssistId("");
+                      setIsGoalTeamPickerOpen(false);
+                    }}
+                  >
+                    <TeamLogo logoUrl={team.logoUrl} name={team.name} />
+                    <span>{team.shortName}</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
             <select value={eventType} onChange={(event) => setEventType(event.target.value as ResultGoalEvent["eventType"])}>
               <option value="goal">Гол</option>
               <option value="penalty">Пенальти</option>
@@ -1642,11 +1734,18 @@ function AdminView(props: {
               </label>
             ) : null}
             <div className="modal-actions">
-              <button className="ghost bordered" type="button" onClick={() => setEventTeamId("")}>
+              <button
+                className="ghost bordered"
+                type="button"
+                onClick={() => {
+                  setEventTeamId("");
+                  setIsGoalTeamPickerOpen(false);
+                }}
+              >
                 Отмена
               </button>
               <button className="primary" type="submit">
-                Добавить гол
+                Добавить событие
               </button>
             </div>
           </form>
