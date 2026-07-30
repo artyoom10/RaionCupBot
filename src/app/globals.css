@@ -347,8 +347,8 @@ button:disabled {
   background: transparent;
   color: inherit;
   display: grid;
-  gap: 14px;
-  padding: 18px 16px 14px;
+  gap: 9px;
+  padding: 12px 14px 11px;
 }
 
 .match-date {
@@ -356,7 +356,7 @@ button:disabled {
   font-weight: 800;
   text-align: center;
   display: grid;
-  gap: 3px;
+  gap: 1px;
 }
 
 .match-date strong {
@@ -365,7 +365,7 @@ button:disabled {
 
 .match-date small {
   color: var(--text);
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .match-meta,
@@ -378,20 +378,20 @@ button:disabled {
 }
 
 .score-row {
-  min-height: 92px;
+  min-height: 74px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 82px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 76px minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .score-row > strong {
-  min-height: 58px;
-  border-radius: 18px;
+  min-height: 50px;
+  border-radius: 16px;
   background: rgba(23, 33, 28, 0.08);
   display: grid;
   place-items: center;
-  font-size: 25px;
+  font-size: 23px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -404,7 +404,7 @@ button:disabled {
   display: grid;
   justify-items: center;
   align-items: center;
-  gap: 7px;
+  gap: 5px;
   font-weight: 800;
   text-align: center;
 }
@@ -414,8 +414,8 @@ button:disabled {
 }
 
 .team-side .team-logo {
-  width: 46px;
-  height: 46px;
+  width: 40px;
+  height: 40px;
   border-radius: 999px;
 }
 
@@ -423,6 +423,7 @@ button:disabled {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 15px;
 }
 
 .table-wrap {
@@ -1039,6 +1040,8 @@ thead .chess-team-sticky {
 .admin-result-card {
   display: grid !important;
   gap: 10px;
+  justify-items: center;
+  text-align: center;
 }
 
 .admin-result-card > small {
@@ -1048,7 +1051,7 @@ thead .chess-team-sticky {
 }
 
 .admin-result-score {
-  width: 100%;
+  width: min(100%, 340px);
   display: grid;
   grid-template-columns: minmax(0, 1fr) 76px minmax(0, 1fr);
   align-items: center;
@@ -1088,6 +1091,7 @@ thead .chess-team-sticky {
 }
 
 .admin-match-list button {
+  justify-self: center;
   min-height: 38px;
   border: 0;
   border-radius: 999px;
@@ -1279,13 +1283,13 @@ thead .chess-team-sticky {
   z-index: 50;
   display: grid;
   place-items: center;
-  padding: 18px 14px;
+  padding: max(76px, env(safe-area-inset-top)) 14px max(104px, env(safe-area-inset-bottom));
   background: rgba(23, 33, 28, 0.28);
 }
 
 .modal-sheet {
   width: min(430px, 100%);
-  max-height: min(80vh, 720px);
+  max-height: min(66vh, 620px);
   overflow-y: auto;
   overscroll-behavior: contain;
   margin: 0;
