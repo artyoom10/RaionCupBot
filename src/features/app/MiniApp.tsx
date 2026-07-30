@@ -2,6 +2,7 @@
 
 import { BarChart3, CalendarDays, ChevronLeft, Plus, Shield, Trophy, UserRound, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { BottomNav, type TabKey } from "@/components/navigation/BottomNav";
 import { Splash } from "@/components/splash/Splash";
 import { TOURNAMENT_ACCENT_COLOR, TOURNAMENT_LOGO_URL } from "@/lib/branding";
@@ -1206,8 +1207,7 @@ function Modal({
   className?: string;
 }) {
   const backdropClassName = className ? `${className}-backdrop` : "";
-
-  return (
+  const content = (
     <div className={`modal-backdrop ${backdropClassName}`} role="dialog" aria-modal="true" aria-label={title}>
       <section className={`modal-sheet ${className}`}>
         <header>
@@ -1220,6 +1220,8 @@ function Modal({
       </section>
     </div>
   );
+
+  return typeof document === "undefined" ? content : createPortal(content, document.body);
 }
 
 function ProfileView(props: {

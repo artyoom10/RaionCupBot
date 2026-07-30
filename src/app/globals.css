@@ -993,10 +993,12 @@ thead .chess-team-sticky {
 }
 
 .team-profile-hero {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 16px;
+  min-height: 104px;
+  padding: 16px 96px 16px 16px;
 }
 
 .team-profile-hero .team-logo {
@@ -1017,9 +1019,11 @@ thead .chess-team-sticky {
 }
 
 .team-place-badge {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
   width: fit-content;
   display: inline-grid;
-  margin-top: 8px;
   padding: 5px 9px;
   border-radius: 999px;
   background: var(--accent-soft);
@@ -1700,11 +1704,6 @@ thead .chess-team-sticky {
   background: rgba(23, 33, 28, 0.28);
 }
 
-.favorite-picker-modal-backdrop {
-  place-items: end center;
-  padding: max(148px, env(safe-area-inset-top)) 14px max(94px, calc(env(safe-area-inset-bottom) + 94px));
-}
-
 .operation-backdrop {
   position: fixed;
   inset: 0;
@@ -1772,10 +1771,9 @@ thead .chess-team-sticky {
 }
 
 .favorite-picker-modal {
-  align-self: end;
   width: min(430px, 100%);
   grid-template-rows: auto minmax(0, 1fr) auto;
-  max-height: min(calc(100dvh - 252px), 500px);
+  max-height: min(66vh, 620px);
   overflow: hidden;
 }
 
