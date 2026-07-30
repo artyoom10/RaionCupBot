@@ -1205,8 +1205,10 @@ function Modal({
   onClose: () => void;
   className?: string;
 }) {
+  const backdropClassName = className ? `${className}-backdrop` : "";
+
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={title}>
+    <div className={`modal-backdrop ${backdropClassName}`} role="dialog" aria-modal="true" aria-label={title}>
       <section className={`modal-sheet ${className}`}>
         <header>
           <h2>{title}</h2>
