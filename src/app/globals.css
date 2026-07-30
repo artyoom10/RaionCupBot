@@ -238,15 +238,17 @@ button:disabled {
 }
 
 .loading-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
+  min-height: calc(100dvh - 230px);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .mini-spinner {
-  width: 22px;
-  height: 22px;
+  width: 34px;
+  height: 34px;
   border-radius: 999px;
   border: 3px solid #dfe9e4;
   border-top-color: var(--accent);
@@ -1296,7 +1298,7 @@ thead .chess-team-sticky {
 .admin-result-card {
   display: grid !important;
   gap: 10px;
-  justify-items: center;
+  justify-items: stretch;
   text-align: center;
 }
 
@@ -1307,9 +1309,9 @@ thead .chess-team-sticky {
 }
 
 .admin-result-score {
-  width: min(100%, 340px);
+  width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 76px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 82px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
 }
@@ -1341,6 +1343,10 @@ thead .chess-team-sticky {
   font-variant-numeric: tabular-nums;
 }
 
+.admin-result-card > button {
+  justify-self: center;
+}
+
 .admin-match-list span {
   display: block;
   color: var(--muted);
@@ -1348,7 +1354,6 @@ thead .chess-team-sticky {
 }
 
 .admin-match-list button {
-  justify-self: center;
   min-height: 38px;
   border: 0;
   border-radius: 999px;
@@ -1356,6 +1361,11 @@ thead .chess-team-sticky {
   color: var(--accent);
   padding: 0 12px;
   font-weight: 800;
+}
+
+.admin-result-card .ghost {
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text);
 }
 
 .native-admin-card {
@@ -1543,6 +1553,56 @@ thead .chess-team-sticky {
   place-items: center;
   padding: max(76px, env(safe-area-inset-top)) 14px max(104px, env(safe-area-inset-bottom));
   background: rgba(23, 33, 28, 0.28);
+}
+
+.operation-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: max(76px, env(safe-area-inset-top)) 18px max(104px, env(safe-area-inset-bottom));
+  background: rgba(23, 33, 28, 0.32);
+}
+
+.operation-modal {
+  width: min(360px, 100%);
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 24px 70px rgba(22, 35, 29, 0.28);
+  text-align: center;
+  backdrop-filter: blur(24px) saturate(1.35);
+}
+
+.operation-modal.success {
+  border-color: rgba(15, 143, 98, 0.24);
+}
+
+.operation-modal.error {
+  border-color: rgba(179, 38, 30, 0.2);
+}
+
+.operation-modal h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.operation-modal p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.operation-modal.error h2 {
+  color: var(--danger);
+}
+
+.operation-modal .primary {
+  width: 100%;
 }
 
 .modal-sheet {

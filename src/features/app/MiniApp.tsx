@@ -53,6 +53,12 @@ type ResultGoalEvent = {
   eventType: "goal" | "penalty" | "own_goal";
 };
 
+type AdminOperationStatus = {
+  state: "loading" | "success" | "error";
+  title: string;
+  message: string;
+} | null;
+
 type PublicGoalEvent = ResultGoalEvent & {
   id: string;
   matchId: string;
@@ -165,14 +171,19 @@ export function MiniApp() {
 
   const apiFetch = useCallback(
     async <T,>(path: string, init?: RequestInit): Promise<T> => {
-      const response = await fetch(path, {
-        ...init,
-        headers: {
-          "Content-Type": "application/json",
-          "X-Telegram-Init-Data": initData,
-          ...init?.headers
-        }
-      });
+      let response: Response;
+      try {
+        response = await fetch(path, {
+          ...init,
+          headers: {
+            "Content-Type": "application/json",
+            "X-Telegram-Init-Data": initData,
+            ...init?.headers
+          }
+        });
+      } catch {
+        throw new Error("Не удалось подключиться к серверу. Проверьте деплой Vercel и интернет-соединение в Telegram.");
+      }
       const json = (await response.json()) as T & { error?: string };
       if (!response.ok) {
         throw new Error(json.error ?? "Ошибка запроса");
@@ -538,8 +549,7 @@ function StateBlock<T>({ state, emptyText, children }: { state: RemoteState<T>; 
   if (state.loading) {
     return (
       <div className="state loading-state">
-        <span className="mini-spinner" />
-        Загрузка
+        <span className="mini-spinner" aria-label="Загрузка" />
       </div>
     );
   }
@@ -1275,6 +1285,7 @@ function AdminView(props: {
   const [eventType, setEventType] = useState<ResultGoalEvent["eventType"]>("goal");
   const [eventScorerId, setEventScorerId] = useState("");
   const [eventAssistId, setEventAssistId] = useState<string>("");
+  const [operationStatus, setOperationStatus] = useState<AdminOperationStatus>(null);
 
   const canManageSchedule = Boolean(permissions.manage_schedule);
   const canPublishResult = Boolean(permissions.publish_result);
@@ -1408,6 +1419,13 @@ function AdminView(props: {
       return;
     }
 
+    const action = editingMatchId ? "обновление матча" : "создание матча";
+    setOperationStatus({
+      state: "loading",
+      title: editingMatchId ? "Сохраняем матч" : "Создаём матч",
+      message: "Отправляем данные на сервер..."
+    });
+
     try {
       await apiFetch("/api/admin/matches", {
         method: "POST",
@@ -1425,8 +1443,19 @@ function AdminView(props: {
       onMessage(editingMatchId ? "Матч обновлён" : "Матч добавлен");
       props.onDataChanged();
       await loadAdminData();
+      setOperationStatus({
+        state: "success",
+        title: editingMatchId ? "Матч сохранён" : "Матч создан",
+        message: "Данные успешно сохранены."
+      });
     } catch (error) {
-      onMessage(error instanceof Error ? error.message : "Не удалось добавить матч");
+      const message = error instanceof Error ? error.message : "Не удалось добавить матч";
+      onMessage(message);
+      setOperationStatus({
+        state: "error",
+        title: `Не удалось выполнить ${action}`,
+        message
+      });
     }
   }
 
@@ -1502,6 +1531,11 @@ function AdminView(props: {
     }
 
     try {
+      setOperationStatus({
+        state: "loading",
+        title: selectedResultMatch.status === "published" ? "Сохраняем результат" : "Отправляем результат",
+        message: "Обновляем протокол матча..."
+      });
       const endpoint = selectedResultMatch.status === "published" ? "/api/admin/results/replace" : "/api/admin/results/publish";
       await apiFetch(endpoint, {
         method: "POST",
@@ -1524,8 +1558,19 @@ function AdminView(props: {
       onMessage(selectedResultMatch.status === "published" ? "Результат обновлён" : "Результат опубликован");
       props.onDataChanged();
       await loadAdminData();
+      setOperationStatus({
+        state: "success",
+        title: selectedResultMatch.status === "published" ? "Результат сохранён" : "Результат отправлен",
+        message: "Данные успешно сохранены."
+      });
     } catch (error) {
-      onMessage(error instanceof Error ? error.message : "Не удалось отправить результат");
+      const message = error instanceof Error ? error.message : "Не удалось отправить результат";
+      onMessage(message);
+      setOperationStatus({
+        state: "error",
+        title: "Не удалось сохранить результат",
+        message
+      });
     }
   }
 
@@ -1904,6 +1949,24 @@ function AdminView(props: {
           </form>
         </Modal>
       ) : null}
+      {operationStatus ? <AdminOperationModal status={operationStatus} onClose={() => setOperationStatus(null)} /> : null}
     </section>
+  );
+}
+
+function AdminOperationModal({ status, onClose }: { status: Exclude<AdminOperationStatus, null>; onClose: () => void }) {
+  return (
+    <div className="operation-backdrop" role="alertdialog" aria-modal="true" aria-label={status.title}>
+      <section className={`operation-modal ${status.state}`}>
+        {status.state === "loading" ? <span className="mini-spinner" aria-label="Загрузка" /> : null}
+        <h2>{status.title}</h2>
+        <p>{status.message}</p>
+        {status.state !== "loading" ? (
+          <button className="primary" type="button" onClick={onClose}>
+            Понятно
+          </button>
+        ) : null}
+      </section>
+    </div>
   );
 }
