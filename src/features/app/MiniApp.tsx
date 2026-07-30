@@ -567,7 +567,6 @@ function CalendarView({
         <div className="calendar-screen">
           <div className="calendar-head">
             <div>
-              <span>Календарь турнира</span>
               <h1>Матчи</h1>
             </div>
             <label className="past-toggle">
@@ -641,7 +640,7 @@ function MatchGroup({
                   <strong>{match.homeScore === null ? "- : -" : `${match.homeScore}:${match.awayScore}`}</strong>
                   <TeamSide name={match.awayTeamShortName} logoUrl={match.awayLogoUrl} onClick={() => onTeamOpen(match.awayTeamId)} />
                 </div>
-                <footer>Тур {match.round}</footer>
+                <footer>{match.status === "published" ? "Матч завершён" : "Матч ожидается"}</footer>
               </div>
             </article>
           );
@@ -803,7 +802,8 @@ function StatisticsView({ state, onPlayerOpen }: { state: RemoteState<PlayerStat
   return (
     <StateBlock state={{ ...state, data: sorted }} emptyText="Статистика появится после протоколов матчей">
       {(rows) => (
-        <>
+        <section className="statistics-screen">
+          <h1>Статистика</h1>
           <div className="segments">
             {[
               ["goals", "Голы"],
@@ -827,7 +827,7 @@ function StatisticsView({ state, onPlayerOpen }: { state: RemoteState<PlayerStat
               </button>
             ))}
           </div>
-        </>
+        </section>
       )}
     </StateBlock>
   );
@@ -878,7 +878,7 @@ function MatchDetailScreen({
             <strong>{match.awayTeamShortName}</strong>
           </button>
         </div>
-        <p>Тур {match.round}</p>
+        <p>{match.status === "published" ? "Матч завершён" : "Матч ожидается"}</p>
       </div>
       <section className="detail-card">
         <h2>События</h2>
@@ -1119,7 +1119,6 @@ function AdminView(props: {
   const [teamShortName, setTeamShortName] = useState("");
   const [playerName, setPlayerName] = useState("");
   const [playerTeamId, setPlayerTeamId] = useState(props.teams[0]?.id ?? "");
-  const [round, setRound] = useState("1");
   const [kickoffAt, setKickoffAt] = useState("");
   const [homeTeamId, setHomeTeamId] = useState(props.teams[0]?.id ?? "");
   const [awayTeamId, setAwayTeamId] = useState(props.teams[1]?.id ?? "");
@@ -1130,7 +1129,12 @@ function AdminView(props: {
   const [resultType, setResultType] = useState<"normal" | "technical_home" | "technical_away" | "technical_both">("normal");
   const [goalEvents, setGoalEvents] = useState<ResultGoalEvent[]>([]);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
+  const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
   const [editingResultMatchId, setEditingResultMatchId] = useState<string | null>(null);
+  const [eventTeamId, setEventTeamId] = useState<string>("");
+  const [eventType, setEventType] = useState<ResultGoalEvent["eventType"]>("goal");
+  const [eventScorerId, setEventScorerId] = useState("");
+  const [eventAssistId, setEventAssistId] = useState<string>("");
 
   const canManageSchedule = Boolean(permissions.manage_schedule);
   const canPublishResult = Boolean(permissions.publish_result);
@@ -1268,13 +1272,14 @@ function AdminView(props: {
       await apiFetch("/api/admin/matches", {
         method: "POST",
         body: JSON.stringify({
-          round: Number(round),
+          round: 1,
           kickoffAt: kickoffAt ? new Date(kickoffAt).toISOString() : null,
           venue: null,
           homeTeamId,
           awayTeamId
         })
       });
+      setIsMatchModalOpen(false);
       onMessage("Матч добавлен");
       props.onDataChanged();
       await loadAdminData();
@@ -1283,23 +1288,55 @@ function AdminView(props: {
     }
   }
 
-  function updateGoalEvent(index: number, patch: Partial<ResultGoalEvent>) {
-    setGoalEvents((current) =>
-      current.map((event, eventIndex) => {
-        if (eventIndex !== index) {
-          return event;
-        }
-        const next = { ...event, ...patch };
-        if (patch.teamId) {
-          next.scorerPlayerId = firstPlayerId(patch.teamId);
-          next.assistPlayerId = null;
-        }
-        if (patch.eventType === "penalty" || patch.eventType === "own_goal") {
-          next.assistPlayerId = null;
-        }
-        return next;
-      })
-    );
+  function openGoalEventModal(teamId: string) {
+    const scorerPlayerId = firstPlayerId(teamId);
+    if (!scorerPlayerId) {
+      onMessage("Для выбранной команды нет игроков в заявке");
+      return;
+    }
+    setEventTeamId(teamId);
+    setEventType("goal");
+    setEventScorerId(scorerPlayerId);
+    setEventAssistId("");
+  }
+
+  function addPreparedGoalEvent() {
+    if (!eventTeamId || !eventScorerId) {
+      onMessage("Выберите игрока");
+      return;
+    }
+    setGoalEvents((current) => [
+      ...current,
+      {
+        teamId: eventTeamId,
+        scorerPlayerId: eventScorerId,
+        assistPlayerId: eventType === "goal" ? eventAssistId || null : null,
+        eventType
+      }
+    ]);
+    setEventTeamId("");
+  }
+
+  function previewScore() {
+    if (!selectedResultMatch || resultType !== "normal") {
+      if (resultType === "technical_home") return "3:0";
+      if (resultType === "technical_away") return "0:3";
+      if (resultType === "technical_both") return "0:0";
+      return "- : -";
+    }
+
+    let home = 0;
+    let away = 0;
+    for (const event of goalEvents) {
+      if (event.eventType === "own_goal") {
+        if (event.teamId === selectedResultMatch.homeTeamId) away += 1;
+        if (event.teamId === selectedResultMatch.awayTeamId) home += 1;
+      } else {
+        if (event.teamId === selectedResultMatch.homeTeamId) home += 1;
+        if (event.teamId === selectedResultMatch.awayTeamId) away += 1;
+      }
+    }
+    return `${home}:${away}`;
   }
 
   async function submitResult() {
@@ -1379,49 +1416,14 @@ function AdminView(props: {
         </section>
       ) : null}
       {props.permissions.manage_schedule ? (
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            void createMatch();
-          }}
-        >
+        <section className="admin-action-card">
           <h2>Матч</h2>
-          <div className="admin-grid-two">
-            <label>
-              Тур
-              <input value={round} onChange={(event) => setRound(event.target.value)} type="number" min="1" />
-            </label>
-            <label>
-              Дата
-              <input value={kickoffAt} onChange={(event) => setKickoffAt(event.target.value)} type="datetime-local" />
-            </label>
-          </div>
-          <div className="admin-grid-two">
-            <label>
-              Хозяева
-              <select value={homeTeamId} onChange={(event) => setHomeTeamId(event.target.value)}>
-                {props.teams.map((team) => (
-                  <option key={team.id} value={team.id}>
-                    {team.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Гости
-              <select value={awayTeamId} onChange={(event) => setAwayTeamId(event.target.value)}>
-                {props.teams.map((team) => (
-                  <option key={team.id} value={team.id}>
-                    {team.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <button className="primary" type="submit">
+          <p>Выберите дату и две команды в отдельном окне.</p>
+          <button className="primary" type="button" onClick={() => setIsMatchModalOpen(true)}>
+            <Plus size={18} />
             Создать матч
           </button>
-        </form>
+        </section>
       ) : null}
       {props.permissions.publish_result || props.permissions.replace_result ? (
         <section className="admin-action-card">
@@ -1429,11 +1431,19 @@ function AdminView(props: {
           {adminLoading ? <div className="notice">Загрузка матчей и заявок...</div> : null}
           <div className="admin-match-list">
             {adminMatches.map((match) => (
-              <article key={match.id}>
-                <div>
-                  <span>Тур {match.round}</span>
-                  <strong>{match.homeTeamShortName} {match.homeScore === null ? "- : -" : `${match.homeScore}:${match.awayScore}`} {match.awayTeamShortName}</strong>
+              <article key={match.id} className="admin-result-card">
+                <div className="admin-result-score">
+                  <div>
+                    <TeamLogo logoUrl={match.homeLogoUrl} name={match.homeTeamName} />
+                    <span>{match.homeTeamShortName}</span>
+                  </div>
+                  <strong>{match.homeScore === null ? "- : -" : `${match.homeScore}:${match.awayScore}`}</strong>
+                  <div>
+                    <TeamLogo logoUrl={match.awayLogoUrl} name={match.awayTeamName} />
+                    <span>{match.awayTeamShortName}</span>
+                  </div>
                 </div>
+                <small>{formatMatchDateParts(match.kickoffAt).date}</small>
                 <button type="button" onClick={() => void openResultEditor(match.id)}>
                   Редактировать результат
                 </button>
@@ -1471,6 +1481,52 @@ function AdminView(props: {
           </form>
         </Modal>
       ) : null}
+      {isMatchModalOpen ? (
+        <Modal title="Создать матч" onClose={() => setIsMatchModalOpen(false)}>
+          <form
+            className="native-admin-card"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void createMatch();
+            }}
+          >
+            <label>
+              Дата и время
+              <input value={kickoffAt} onChange={(event) => setKickoffAt(event.target.value)} type="datetime-local" />
+            </label>
+            <div className="admin-grid-two">
+              <label>
+                Хозяева
+                <select value={homeTeamId} onChange={(event) => setHomeTeamId(event.target.value)}>
+                  {props.teams.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Гости
+                <select value={awayTeamId} onChange={(event) => setAwayTeamId(event.target.value)}>
+                  {props.teams.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="modal-actions">
+              <button className="ghost bordered" type="button" onClick={() => setIsMatchModalOpen(false)}>
+                Отмена
+              </button>
+              <button className="primary" type="submit">
+                Создать
+              </button>
+            </div>
+          </form>
+        </Modal>
+      ) : null}
       {editingResultMatchId && selectedResultMatch ? (
         <Modal title="Результат матча" onClose={() => setEditingResultMatchId(null)}>
           <form
@@ -1481,8 +1537,18 @@ function AdminView(props: {
             }}
           >
             <div className="modal-match-title">
-              <span>Тур {selectedResultMatch.round}</span>
-              <strong>{selectedResultMatch.homeTeamShortName} {selectedResultMatch.homeScore === null ? "- : -" : `${selectedResultMatch.homeScore}:${selectedResultMatch.awayScore}`} {selectedResultMatch.awayTeamShortName}</strong>
+              <span>{formatMatchDateParts(selectedResultMatch.kickoffAt).date}</span>
+              <div className="admin-result-score modal-score">
+                <div>
+                  <TeamLogo logoUrl={selectedResultMatch.homeLogoUrl} name={selectedResultMatch.homeTeamName} />
+                  <span>{selectedResultMatch.homeTeamShortName}</span>
+                </div>
+                <strong>{previewScore()}</strong>
+                <div>
+                  <TeamLogo logoUrl={selectedResultMatch.awayLogoUrl} name={selectedResultMatch.awayTeamName} />
+                  <span>{selectedResultMatch.awayTeamShortName}</span>
+                </div>
+              </div>
             </div>
           <select value={resultType} onChange={(event) => setResultType(event.target.value as typeof resultType)}>
             <option value="normal">Обычный результат</option>
@@ -1501,14 +1567,7 @@ function AdminView(props: {
                     </div>
                     <button
                       type="button"
-                      onClick={() => {
-                        const scorerPlayerId = firstPlayerId(team.id);
-                        if (!scorerPlayerId) {
-                          onMessage("Для выбранной команды нет игроков в заявке");
-                          return;
-                        }
-                        setGoalEvents((current) => [...current, { teamId: team.id, scorerPlayerId, assistPlayerId: null, eventType: "goal" }]);
-                      }}
+                      onClick={() => openGoalEventModal(team.id)}
                     >
                       <Plus size={18} />
                     </button>
@@ -1518,41 +1577,16 @@ function AdminView(props: {
               <div className="goal-events">
                 {goalEvents.map((event, index) => {
                   const teamPlayers = playersForTeam(event.teamId);
+                  const scorer = teamPlayers.find((player) => player.id === event.scorerPlayerId);
+                  const assistant = teamPlayers.find((player) => player.id === event.assistPlayerId);
+                  const team = resultTeams.find((item) => item.id === event.teamId);
                   return (
-                    <div key={index} className="goal-event-row">
-                      <select value={event.eventType} onChange={(changeEvent) => updateGoalEvent(index, { eventType: changeEvent.target.value as ResultGoalEvent["eventType"] })}>
-                        <option value="goal">Гол</option>
-                        <option value="penalty">Пенальти</option>
-                        <option value="own_goal">Автогол</option>
-                      </select>
-                      <select value={event.teamId} onChange={(changeEvent) => updateGoalEvent(index, { teamId: changeEvent.target.value })}>
-                        {resultTeams.map((team) => (
-                          <option key={team.id} value={team.id}>
-                            {team.shortName}
-                          </option>
-                        ))}
-                      </select>
-                      <select value={event.scorerPlayerId} onChange={(changeEvent) => updateGoalEvent(index, { scorerPlayerId: changeEvent.target.value })}>
-                        {teamPlayers.map((player) => (
-                          <option key={player.id} value={player.id}>
-                            {player.fullName}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        value={event.assistPlayerId ?? ""}
-                        disabled={event.eventType !== "goal"}
-                        onChange={(changeEvent) => updateGoalEvent(index, { assistPlayerId: changeEvent.target.value || null })}
-                      >
-                        <option value="">Без паса</option>
-                        {teamPlayers
-                          .filter((player) => player.id !== event.scorerPlayerId)
-                          .map((player) => (
-                            <option key={player.id} value={player.id}>
-                              {player.fullName}
-                            </option>
-                          ))}
-                      </select>
+                    <div key={index} className="goal-event-preview">
+                      <TeamLogo logoUrl={team?.logoUrl ?? null} name={team?.name ?? "Команда"} />
+                      <div>
+                        <strong>{event.eventType === "penalty" ? "Пенальти" : event.eventType === "own_goal" ? "Автогол" : "Гол"} · {scorer?.fullName ?? "Игрок"}</strong>
+                        <span>{assistant ? `пас: ${assistant.fullName}` : "без ассиста"}</span>
+                      </div>
                       <button type="button" className="iconless-danger" onClick={() => setGoalEvents((current) => current.filter((_, eventIndex) => eventIndex !== index))}>
                         Удалить
                       </button>
@@ -1565,6 +1599,56 @@ function AdminView(props: {
           <button className="primary" type="submit">
             Отправить результат
           </button>
+          </form>
+        </Modal>
+      ) : null}
+      {eventTeamId ? (
+        <Modal title="Добавить гол" onClose={() => setEventTeamId("")}>
+          <form
+            className="native-admin-card"
+            onSubmit={(event) => {
+              event.preventDefault();
+              addPreparedGoalEvent();
+            }}
+          >
+            <select value={eventType} onChange={(event) => setEventType(event.target.value as ResultGoalEvent["eventType"])}>
+              <option value="goal">Гол</option>
+              <option value="penalty">Пенальти</option>
+              <option value="own_goal">Автогол</option>
+            </select>
+            <label>
+              Кто забил
+              <select value={eventScorerId} onChange={(event) => setEventScorerId(event.target.value)}>
+                {playersForTeam(eventTeamId).map((player) => (
+                  <option key={player.id} value={player.id}>
+                    {player.fullName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {eventType === "goal" ? (
+              <label>
+                Ассистент
+                <select value={eventAssistId} onChange={(event) => setEventAssistId(event.target.value)}>
+                  <option value="">Без паса</option>
+                  {playersForTeam(eventTeamId)
+                    .filter((player) => player.id !== eventScorerId)
+                    .map((player) => (
+                      <option key={player.id} value={player.id}>
+                        {player.fullName}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            ) : null}
+            <div className="modal-actions">
+              <button className="ghost bordered" type="button" onClick={() => setEventTeamId("")}>
+                Отмена
+              </button>
+              <button className="primary" type="submit">
+                Добавить гол
+              </button>
+            </div>
           </form>
         </Modal>
       ) : null}
