@@ -1326,6 +1326,7 @@ function AdminView(props: {
     ? teams.filter((team) => team.id === selectedResultMatch.homeTeamId || team.id === selectedResultMatch.awayTeamId)
     : [];
   const selectedPlayerTeam = playerTeams.find((team) => team.id === playerTeamId) ?? null;
+  const selectedTeamPlayers = selectedPlayerTeam ? playersForTeam(selectedPlayerTeam.id).sort((a, b) => a.fullName.localeCompare(b.fullName, "ru")) : [];
   const selectedEventTeam = resultTeams.find((team) => team.id === eventTeamId) ?? null;
 
   const loadAdminData = useCallback(async () => {
@@ -1685,21 +1686,10 @@ function AdminView(props: {
       {props.permissions.manage_any_players ? (
         <section className="admin-action-card">
           <h2>Заявка</h2>
-          <p>Добавляйте игроков в заявку команды одним действием.</p>
           <button className="primary" type="button" onClick={() => setIsPlayerModalOpen(true)}>
             <Plus size={18} />
             Добавить игрока
           </button>
-          <div className="compact-list">
-            {players
-              .filter((player) => playerTeams.some((team) => team.id === player.teamId))
-              .slice(0, 8)
-              .map((player) => (
-                <span key={player.id} className={player.isActive ? "" : "inactive"}>
-                  {player.fullName}
-                </span>
-              ))}
-          </div>
         </section>
       ) : null}
       {props.permissions.manage_schedule ? (
@@ -1785,6 +1775,18 @@ function AdminView(props: {
                 ))}
               </div>
             ) : null}
+            <div className="modal-roster-preview">
+              <strong>{selectedPlayerTeam ? `Игроки команды ${selectedPlayerTeam.shortName}` : "Игроки команды"}</strong>
+              {selectedTeamPlayers.length > 0 ? (
+                <div>
+                  {selectedTeamPlayers.map((player) => (
+                    <span key={player.id}>{player.fullName}</span>
+                  ))}
+                </div>
+              ) : (
+                <small>В заявке пока нет игроков.</small>
+              )}
+            </div>
             <div className="admin-grid-two">
               <input value={playerLastName} onChange={(event) => setPlayerLastName(event.target.value)} placeholder="Фамилия" />
               <input value={playerFirstName} onChange={(event) => setPlayerFirstName(event.target.value)} placeholder="Имя" />
@@ -1826,27 +1828,41 @@ function AdminView(props: {
               Дата и время
               <input value={kickoffAt} onChange={(event) => setKickoffAt(event.target.value)} type="datetime-local" />
             </label>
-            <div className="admin-grid-two">
-              <label>
-                Хозяева
-                <select value={homeTeamId} onChange={(event) => setHomeTeamId(event.target.value)}>
+            <div className="match-team-panels">
+              <section>
+                <h3>Хозяева</h3>
+                <div className="team-picker team-picker-grid compact-team-grid">
                   {props.teams.map((team) => (
-                    <option key={team.id} value={team.id}>
-                      {team.name}
-                    </option>
+                    <button
+                      key={team.id}
+                      type="button"
+                      className={homeTeamId === team.id ? "active" : ""}
+                      disabled={awayTeamId === team.id}
+                      onClick={() => setHomeTeamId(team.id)}
+                    >
+                      <TeamLogo logoUrl={team.logoUrl} name={team.name} />
+                      <span>{team.shortName}</span>
+                    </button>
                   ))}
-                </select>
-              </label>
-              <label>
-                Гости
-                <select value={awayTeamId} onChange={(event) => setAwayTeamId(event.target.value)}>
+                </div>
+              </section>
+              <section>
+                <h3>Гости</h3>
+                <div className="team-picker team-picker-grid compact-team-grid">
                   {props.teams.map((team) => (
-                    <option key={team.id} value={team.id}>
-                      {team.name}
-                    </option>
+                    <button
+                      key={team.id}
+                      type="button"
+                      className={awayTeamId === team.id ? "active" : ""}
+                      disabled={homeTeamId === team.id}
+                      onClick={() => setAwayTeamId(team.id)}
+                    >
+                      <TeamLogo logoUrl={team.logoUrl} name={team.name} />
+                      <span>{team.shortName}</span>
+                    </button>
                   ))}
-                </select>
-              </label>
+                </div>
+              </section>
             </div>
             <div className="modal-actions">
               <button

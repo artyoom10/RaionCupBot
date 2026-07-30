@@ -1360,6 +1360,9 @@ thead .chess-team-sticky {
 .admin-result-card {
   display: grid !important;
   gap: 10px;
+  width: 100%;
+  align-items: stretch;
+  justify-content: stretch;
   justify-items: stretch;
   text-align: center;
 }
@@ -1373,9 +1376,9 @@ thead .chess-team-sticky {
 .admin-result-score {
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 88px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 92px minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .admin-result-score > div {
@@ -1481,6 +1484,17 @@ thead .chess-team-sticky {
   height: 34px;
 }
 
+.compact-team-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.compact-team-grid button {
+  min-height: 70px;
+}
+
 .selected-team-control {
   width: 100%;
   min-height: 64px;
@@ -1539,6 +1553,41 @@ thead .chess-team-sticky {
   opacity: 0.55;
 }
 
+.modal-roster-preview {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.modal-roster-preview > strong {
+  font-size: 13px;
+}
+
+.modal-roster-preview > div {
+  max-height: 150px;
+  overflow-y: auto;
+  display: grid;
+  gap: 6px;
+}
+
+.modal-roster-preview span,
+.modal-roster-preview small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.modal-roster-preview span {
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: rgba(23, 33, 28, 0.05);
+}
+
 .admin-grid-two {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1551,6 +1600,25 @@ thead .chess-team-sticky {
   color: var(--muted);
   font-size: 13px;
   font-weight: 700;
+}
+
+.match-team-panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.match-team-panels section {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.match-team-panels h3 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
 }
 
 .result-form {
@@ -1686,8 +1754,9 @@ thead .chess-team-sticky {
 }
 
 .favorite-picker-modal {
+  align-self: end;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  max-height: min(calc(100dvh - 254px), 620px);
+  max-height: min(calc(100dvh - 310px), 520px);
   overflow: hidden;
 }
 
