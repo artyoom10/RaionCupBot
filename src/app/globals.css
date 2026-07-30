@@ -428,6 +428,7 @@ thead .team-column {
   font-size: 23px;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
 
 .team-side {
@@ -938,11 +939,15 @@ thead .chess-team-sticky {
 
 .detail-score b {
   min-width: 76px;
+  height: 54px;
   border-radius: 16px;
-  padding: 13px 14px;
   background: rgba(23, 33, 28, 0.08);
+  display: grid;
+  place-items: center;
   font-size: 26px;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
 
 .detail-card {
@@ -957,8 +962,7 @@ thead .chess-team-sticky {
 }
 
 .event-line,
-.roster-list button,
-.detail-match-list button {
+.roster-list button {
   width: 100%;
   border: 0;
   border-radius: 14px;
@@ -977,14 +981,12 @@ thead .chess-team-sticky {
 }
 
 .event-line span,
-.roster-list button,
-.detail-match-list button {
+.roster-list button {
   min-width: 0;
 }
 
 .event-line small,
-.roster-list small,
-.detail-match-list span {
+.roster-list small {
   display: block;
   color: var(--muted);
   font-size: 12px;
@@ -1188,12 +1190,72 @@ thead .chess-team-sticky {
   font-size: 20px;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
 
 .player-goal-match-card > small {
   color: var(--muted);
   font-size: 12px;
   font-weight: 800;
+}
+
+.profile-match-card {
+  width: 100%;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.68);
+  color: inherit;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  text-align: center;
+}
+
+.profile-match-date {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.profile-match-score {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 76px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-match-score > div {
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  font-weight: 850;
+}
+
+.profile-match-score .team-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+}
+
+.profile-match-score span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.profile-match-score strong {
+  height: 42px;
+  border-radius: 14px;
+  background: rgba(23, 33, 28, 0.08);
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
 
 .roster-list button {
@@ -1311,7 +1373,7 @@ thead .chess-team-sticky {
 .admin-result-score {
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 82px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 88px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
 }
@@ -1341,10 +1403,12 @@ thead .chess-team-sticky {
   font-size: 21px;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
 
 .admin-result-card > button {
   justify-self: center;
+  width: min(100%, 260px);
 }
 
 .admin-match-list span {
@@ -1551,7 +1615,7 @@ thead .chess-team-sticky {
   z-index: 50;
   display: grid;
   place-items: center;
-  padding: max(76px, env(safe-area-inset-top)) 14px max(104px, env(safe-area-inset-bottom));
+  padding: max(126px, env(safe-area-inset-top)) 14px max(108px, env(safe-area-inset-bottom));
   background: rgba(23, 33, 28, 0.28);
 }
 
@@ -1561,7 +1625,7 @@ thead .chess-team-sticky {
   z-index: 80;
   display: grid;
   place-items: center;
-  padding: max(76px, env(safe-area-inset-top)) 18px max(104px, env(safe-area-inset-bottom));
+  padding: max(126px, env(safe-area-inset-top)) 18px max(108px, env(safe-area-inset-bottom));
   background: rgba(23, 33, 28, 0.32);
 }
 
@@ -1623,7 +1687,7 @@ thead .chess-team-sticky {
 
 .favorite-picker-modal {
   grid-template-rows: auto minmax(0, 1fr) auto;
-  max-height: min(74dvh, 640px);
+  max-height: min(calc(100dvh - 254px), 620px);
   overflow: hidden;
 }
 

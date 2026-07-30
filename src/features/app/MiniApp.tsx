@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { BottomNav, type TabKey } from "@/components/navigation/BottomNav";
 import { Splash } from "@/components/splash/Splash";
 import { TOURNAMENT_ACCENT_COLOR, TOURNAMENT_LOGO_URL } from "@/lib/branding";
-import { formatMatchDateParts, formatMoscowDateTime, formatShortDate } from "@/lib/date-time/format";
+import { formatMatchDateParts, formatShortDate } from "@/lib/date-time/format";
 import { getTelegramWebApp } from "@/lib/telegram/web-app";
 import type { AppUser, PlayerStatistic, PublicMatch, RoleAssignment, StandingRow, Team } from "@/types/domain";
 
@@ -1001,6 +1001,8 @@ function TeamProfileScreen({
   onPlayerOpen: (playerId: string) => void;
 }) {
   const teamMatches = matches.filter((match) => match.homeTeamId === team.id || match.awayTeamId === team.id);
+  const finishedMatches = teamMatches.filter((match) => match.status === "published");
+  const upcomingMatches = teamMatches.filter((match) => match.status !== "published");
   const roster = players.filter((player) => player.teamId === team.id).sort((a, b) => a.fullName.localeCompare(b.fullName, "ru"));
   const standing = standings.find((row) => row.teamId === team.id);
   const goals = events.filter((event) => event.teamId === team.id && event.eventType !== "own_goal").length;
@@ -1050,8 +1052,12 @@ function TeamProfileScreen({
         <p className="roster-legend">Г — голы, П — голевые передачи</p>
       </section>
       <section className="detail-card">
-        <h2>Матчи</h2>
-        <DetailMatchList matches={teamMatches} onMatchOpen={onMatchOpen} />
+        <h2>Завершённые матчи</h2>
+        <DetailMatchList matches={finishedMatches} onMatchOpen={onMatchOpen} emptyText="Завершённых матчей пока нет." />
+      </section>
+      <section className="detail-card">
+        <h2>Ближайшие матчи</h2>
+        <DetailMatchList matches={upcomingMatches} onMatchOpen={onMatchOpen} emptyText="Ближайших матчей пока нет." />
       </section>
     </section>
   );
@@ -1148,19 +1154,42 @@ function PlayerGoalMatchList({
   );
 }
 
-function DetailMatchList({ matches, onMatchOpen }: { matches: PublicMatch[]; onMatchOpen: (matchId: string) => void }) {
+function MatchSummaryCard({ match, onMatchOpen }: { match: PublicMatch; onMatchOpen: (matchId: string) => void }) {
+  const dateParts = formatMatchDateParts(match.kickoffAt);
+  return (
+    <button type="button" className="profile-match-card" onClick={() => onMatchOpen(match.id)}>
+      <span className="profile-match-date">{dateParts.date}{dateParts.time ? ` · ${dateParts.time}` : ""}</span>
+      <div className="profile-match-score">
+        <div>
+          <TeamLogo logoUrl={match.homeLogoUrl} name={match.homeTeamName} />
+          <span>{match.homeTeamShortName}</span>
+        </div>
+        <strong>{match.homeScore === null ? "- : -" : `${match.homeScore}:${match.awayScore}`}</strong>
+        <div>
+          <TeamLogo logoUrl={match.awayLogoUrl} name={match.awayTeamName} />
+          <span>{match.awayTeamShortName}</span>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function DetailMatchList({
+  matches,
+  onMatchOpen,
+  emptyText = "Матчей пока нет."
+}: {
+  matches: PublicMatch[];
+  onMatchOpen: (matchId: string) => void;
+  emptyText?: string;
+}) {
   if (matches.length === 0) {
-    return <p className="muted">Матчей пока нет.</p>;
+    return <p className="muted">{emptyText}</p>;
   }
 
   return (
     <div className="detail-match-list">
-      {matches.map((match) => (
-        <button type="button" key={match.id} onClick={() => onMatchOpen(match.id)}>
-          <span>{formatMoscowDateTime(match.kickoffAt)}</span>
-          <strong>{match.homeTeamShortName} {match.homeScore === null ? "- : -" : `${match.homeScore}:${match.awayScore}`} {match.awayTeamShortName}</strong>
-        </button>
-      ))}
+      {matches.map((match) => <MatchSummaryCard key={match.id} match={match} onMatchOpen={onMatchOpen} />)}
     </div>
   );
 }
@@ -1353,6 +1382,21 @@ function AdminView(props: {
   }
 
   async function createTeam() {
+    if (!teamName.trim() || !teamShortName.trim()) {
+      setOperationStatus({
+        state: "error",
+        title: "Команда не сохранена",
+        message: "Заполните полное и короткое название команды."
+      });
+      return;
+    }
+
+    setOperationStatus({
+      state: "loading",
+      title: "Добавляем команду",
+      message: "Отправляем данные на сервер..."
+    });
+
     try {
       await apiFetch("/api/admin/teams", {
         method: "POST",
@@ -1360,19 +1404,38 @@ function AdminView(props: {
       });
       setTeamName("");
       setTeamShortName("");
-      onMessage("Команда добавлена");
       props.onDataChanged();
+      setOperationStatus({
+        state: "success",
+        title: "Команда добавлена",
+        message: "Данные успешно сохранены."
+      });
     } catch (error) {
-      onMessage(error instanceof Error ? error.message : "Не удалось добавить команду");
+      const message = error instanceof Error ? error.message : "Не удалось добавить команду";
+      setOperationStatus({
+        state: "error",
+        title: "Команда не добавлена",
+        message
+      });
     }
   }
 
   async function createPlayer() {
     const fullName = [playerLastName.trim(), playerFirstName.trim()].filter(Boolean).join(" ");
     if (!playerTeamId || !playerLastName.trim() || !playerFirstName.trim()) {
-      onMessage("Выберите команду, введите фамилию и имя игрока");
+      setOperationStatus({
+        state: "error",
+        title: "Игрок не добавлен",
+        message: "Выберите команду, введите фамилию и имя игрока."
+      });
       return;
     }
+
+    setOperationStatus({
+      state: "loading",
+      title: "Добавляем игрока",
+      message: "Отправляем данные на сервер..."
+    });
 
     try {
       await apiFetch("/api/admin/players", {
@@ -1383,10 +1446,19 @@ function AdminView(props: {
       setPlayerFirstName("");
       setIsPlayerModalOpen(false);
       setIsPlayerTeamPickerOpen(false);
-      onMessage("Игрок сохранён");
       await loadAdminData();
+      setOperationStatus({
+        state: "success",
+        title: "Игрок добавлен",
+        message: "Данные успешно сохранены."
+      });
     } catch (error) {
-      onMessage(error instanceof Error ? error.message : "Не удалось добавить игрока");
+      const message = error instanceof Error ? error.message : "Не удалось добавить игрока";
+      setOperationStatus({
+        state: "error",
+        title: "Игрок не добавлен",
+        message
+      });
     }
   }
 
@@ -1415,7 +1487,11 @@ function AdminView(props: {
 
   async function createMatch() {
     if (!homeTeamId || !awayTeamId || homeTeamId === awayTeamId) {
-      onMessage("Выберите две разные команды");
+      setOperationStatus({
+        state: "error",
+        title: "Матч не сохранён",
+        message: "Выберите две разные команды."
+      });
       return;
     }
 
@@ -1440,7 +1516,6 @@ function AdminView(props: {
       });
       setIsMatchModalOpen(false);
       setEditingMatchId(null);
-      onMessage(editingMatchId ? "Матч обновлён" : "Матч добавлен");
       props.onDataChanged();
       await loadAdminData();
       setOperationStatus({
@@ -1450,7 +1525,6 @@ function AdminView(props: {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Не удалось добавить матч";
-      onMessage(message);
       setOperationStatus({
         state: "error",
         title: `Не удалось выполнить ${action}`,
@@ -1470,7 +1544,11 @@ function AdminView(props: {
   function openGoalEventModal(teamId: string) {
     const scorerPlayerId = firstPlayerId(teamId);
     if (!scorerPlayerId) {
-      onMessage("Для выбранной команды нет игроков в заявке");
+      setOperationStatus({
+        state: "error",
+        title: "Событие не добавлено",
+        message: "Для выбранной команды нет игроков в заявке."
+      });
       return;
     }
     setEventTeamId(teamId);
@@ -1482,7 +1560,11 @@ function AdminView(props: {
 
   function addPreparedGoalEvent() {
     if (!eventTeamId || !eventScorerId) {
-      onMessage("Выберите игрока");
+      setOperationStatus({
+        state: "error",
+        title: "Событие не добавлено",
+        message: "Выберите игрока."
+      });
       return;
     }
     setGoalEvents((current) => [
@@ -1522,11 +1604,19 @@ function AdminView(props: {
 
   async function submitResult() {
     if (!selectedResultMatch) {
-      onMessage("Выберите матч");
+      setOperationStatus({
+        state: "error",
+        title: "Результат не сохранён",
+        message: "Выберите матч."
+      });
       return;
     }
     if (selectedResultMatch.status === "published" && !props.permissions.replace_result) {
-      onMessage("Нет прав на изменение опубликованного результата");
+      setOperationStatus({
+        state: "error",
+        title: "Результат не сохранён",
+        message: "Нет прав на изменение опубликованного результата."
+      });
       return;
     }
 
@@ -1555,7 +1645,6 @@ function AdminView(props: {
 
       setGoalEvents([]);
       setEditingResultMatchId(null);
-      onMessage(selectedResultMatch.status === "published" ? "Результат обновлён" : "Результат опубликован");
       props.onDataChanged();
       await loadAdminData();
       setOperationStatus({
@@ -1565,7 +1654,6 @@ function AdminView(props: {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Не удалось отправить результат";
-      onMessage(message);
       setOperationStatus({
         state: "error",
         title: "Не удалось сохранить результат",
@@ -1576,7 +1664,6 @@ function AdminView(props: {
 
   return (
     <section className="admin">
-      {props.message ? <div className="notice">{props.message}</div> : null}
       {!canManageSchedule && !canPublishResult && !canReplaceResult && !canManageAnyPlayers && !props.permissions.manage_teams ? (
         <div className="notice">Для вашей роли пока нет доступных действий в админке.</div>
       ) : null}
@@ -1886,7 +1973,11 @@ function AdminView(props: {
                     onClick={() => {
                       const scorerPlayerId = firstPlayerId(team.id);
                       if (!scorerPlayerId) {
-                        onMessage("Для выбранной команды нет игроков в заявке");
+                        setOperationStatus({
+                          state: "error",
+                          title: "Команда не выбрана",
+                          message: "Для выбранной команды нет игроков в заявке."
+                        });
                         return;
                       }
                       setEventTeamId(team.id);
