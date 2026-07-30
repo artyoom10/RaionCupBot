@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { BottomNav, type TabKey } from "@/components/navigation/BottomNav";
 import { Splash } from "@/components/splash/Splash";
 import { TOURNAMENT_ACCENT_COLOR, TOURNAMENT_LOGO_URL } from "@/lib/branding";
-import { formatMoscowDateTime } from "@/lib/date-time/format";
+import { formatMatchDateParts, formatMoscowDateTime } from "@/lib/date-time/format";
 import { getTelegramWebApp } from "@/lib/telegram/web-app";
 import type { AppUser, PlayerStatistic, PublicMatch, RoleAssignment, StandingRow, Team } from "@/types/domain";
 
@@ -74,6 +74,19 @@ function createIdempotencyKey() {
   const values = new Uint32Array(4);
   globalThis.crypto?.getRandomValues(values);
   return `client-${Array.from(values).join("-")}`;
+}
+
+function TeamLogo({ logoUrl, name, className = "" }: { logoUrl: string | null; name: string; className?: string }) {
+  if (logoUrl) {
+    return <img className={`team-logo ${className}`} src={logoUrl} alt={name} />;
+  }
+
+  const letter = name.trim().charAt(0).toUpperCase() || "?";
+  return (
+    <span className={`team-logo team-initial ${className}`} aria-label={name}>
+      {letter}
+    </span>
+  );
 }
 
 export function MiniApp() {
@@ -164,7 +177,10 @@ export function MiniApp() {
     }
     setBootstrap((state) => ({ ...state, loading: true, error: null }));
     try {
-      const data = await apiFetch<BootstrapResponse>("/api/bootstrap", { method: "POST" });
+      const [data] = await Promise.all([
+        apiFetch<BootstrapResponse>("/api/bootstrap", { method: "POST" }),
+        new Promise((resolve) => window.setTimeout(resolve, 1300))
+      ]);
       setBootstrap({ data, loading: false, error: null });
       setSelectedTeamId(data.user.favoriteTeamId);
     } catch (error) {
@@ -419,7 +435,7 @@ export function MiniApp() {
                 <strong>{favoriteTeam ? favoriteTeam.shortName : "Raion Cup"}</strong>
               </div>
             </div>
-            {favoriteTeam ? <img className="favorite-logo" src={favoriteTeam.logoUrl ?? "/fallback-team-logo.svg"} alt={favoriteTeam.name} /> : null}
+            {favoriteTeam ? <TeamLogo className="favorite-logo" logoUrl={favoriteTeam.logoUrl} name={favoriteTeam.name} /> : null}
           </header>
 
           <section className="content">
@@ -481,7 +497,12 @@ export function MiniApp() {
 
 function StateBlock<T>({ state, emptyText, children }: { state: RemoteState<T>; emptyText: string; children: (data: T) => React.ReactNode }) {
   if (state.loading) {
-    return <div className="state">Загрузка...</div>;
+    return (
+      <div className="state loading-state">
+        <span className="mini-spinner" />
+        Загрузка
+      </div>
+    );
   }
   if (state.error) {
     return <div className="state state-error">{state.error}</div>;
@@ -507,7 +528,7 @@ function Onboarding(props: {
       <div className="team-grid">
         {props.teams.map((team) => (
           <button key={team.id} className={team.id === props.selectedTeamId ? "team-card selected" : "team-card"} onClick={() => props.onSelect(team.id)}>
-            <img src={team.logoUrl ?? "/fallback-team-logo.svg"} alt={team.name} />
+            <TeamLogo logoUrl={team.logoUrl} name={team.name} />
             <strong>{team.shortName}</strong>
             <span>{team.city ?? team.name}</span>
           </button>
@@ -597,20 +618,30 @@ function MatchGroup({
       <div className="match-list">
         {matches.map((match) => {
           const favorite = match.homeTeamId === favoriteTeamId || match.awayTeamId === favoriteTeamId;
+          const dateParts = formatMatchDateParts(match.kickoffAt);
           return (
             <article key={match.id} className={favorite ? "match-card favorite" : "match-card"}>
-              <button type="button" className="match-card-main" onClick={() => onMatchOpen(match.id)}>
-                <span className="match-date">{formatMoscowDateTime(match.kickoffAt)}</span>
+              <div
+                className="match-card-main"
+                role="button"
+                tabIndex={0}
+                onClick={() => onMatchOpen(match.id)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    onMatchOpen(match.id);
+                  }
+                }}
+              >
+                <span className="match-date">
+                  <strong>{dateParts.date}</strong>
+                  {dateParts.time ? <small>{dateParts.time}</small> : null}
+                </span>
                 <div className="score-row">
-                  <TeamSide name={match.homeTeamShortName} logoUrl={match.homeLogoUrl} />
+                  <TeamSide name={match.homeTeamShortName} logoUrl={match.homeLogoUrl} onClick={() => onTeamOpen(match.homeTeamId)} />
                   <strong>{match.homeScore === null ? "- : -" : `${match.homeScore}:${match.awayScore}`}</strong>
-                  <TeamSide name={match.awayTeamShortName} logoUrl={match.awayLogoUrl} />
+                  <TeamSide name={match.awayTeamShortName} logoUrl={match.awayLogoUrl} onClick={() => onTeamOpen(match.awayTeamId)} />
                 </div>
-                <footer>Тур {match.round} · {match.venue ?? "Стадион уточняется"}</footer>
-              </button>
-              <div className="match-team-actions">
-                <button type="button" onClick={() => onTeamOpen(match.homeTeamId)}>{match.homeTeamShortName}</button>
-                <button type="button" onClick={() => onTeamOpen(match.awayTeamId)}>{match.awayTeamShortName}</button>
+                <footer>Тур {match.round}</footer>
               </div>
             </article>
           );
@@ -620,12 +651,15 @@ function MatchGroup({
   );
 }
 
-function TeamSide({ name, logoUrl }: { name: string; logoUrl: string | null }) {
+function TeamSide({ name, logoUrl, onClick }: { name: string; logoUrl: string | null; onClick: () => void }) {
   return (
-    <div className="team-side">
-      <img src={logoUrl ?? "/fallback-team-logo.svg"} alt={name} />
+    <button type="button" className="team-side" onClick={(event) => {
+      event.stopPropagation();
+      onClick();
+    }}>
+      <TeamLogo logoUrl={logoUrl} name={name} />
       <span>{name}</span>
-    </div>
+    </button>
   );
 }
 
@@ -679,7 +713,7 @@ function StandingsView({
                       <td className="rank-column">{row.place}</td>
                       <td className="team-column">
                         <button type="button" className="table-team" onClick={() => onTeamOpen(row.teamId)}>
-                          <img src={row.logoUrl ?? "/fallback-team-logo.svg"} alt={row.teamName} />
+                          <TeamLogo logoUrl={row.logoUrl} name={row.teamName} />
                           <span>{row.shortName}</span>
                         </button>
                       </td>
@@ -724,7 +758,7 @@ function ChessboardView({
                 {payload.columns.map((team) => (
                 <th key={team.teamId} className={team.teamId === favoriteTeamId ? "favorite-column" : ""}>
                     <button type="button" onClick={() => onTeamOpen(team.teamId)}>
-                      <img src={team.logoUrl ?? "/fallback-team-logo.svg"} alt={team.name} />
+                      <TeamLogo logoUrl={team.logoUrl} name={team.name} />
                       <span>{team.shortName}</span>
                     </button>
                   </th>
@@ -736,7 +770,7 @@ function ChessboardView({
                 <tr key={row.teamId} className={row.teamId === favoriteTeamId ? "favorite-row" : ""}>
                   <td className="chess-team-sticky">
                     <button type="button" className="table-team" onClick={() => onTeamOpen(row.teamId)}>
-                      <img src={row.logoUrl ?? "/fallback-team-logo.svg"} alt={row.name} />
+                      <TeamLogo logoUrl={row.logoUrl} name={row.name} />
                       <span>{row.shortName}</span>
                     </button>
                   </td>
@@ -827,23 +861,24 @@ function MatchDetailScreen({
   const matchEvents = events.filter((event) => event.matchId === match.id);
   const homeTeam = teams.find((team) => team.id === match.homeTeamId);
   const awayTeam = teams.find((team) => team.id === match.awayTeamId);
+  const dateParts = formatMatchDateParts(match.kickoffAt);
 
   return (
     <section className="detail-screen">
       <div className="match-hero-card">
-        <span>{formatMoscowDateTime(match.kickoffAt)}</span>
+        <span>{dateParts.date}{dateParts.time ? ` · ${dateParts.time}` : ""}</span>
         <div className="detail-score">
           <button type="button" onClick={() => onTeamOpen(match.homeTeamId)}>
-            <img src={match.homeLogoUrl ?? "/fallback-team-logo.svg"} alt={match.homeTeamName} />
+            <TeamLogo logoUrl={match.homeLogoUrl} name={match.homeTeamName} />
             <strong>{match.homeTeamShortName}</strong>
           </button>
           <b>{match.homeScore === null ? "- : -" : `${match.homeScore}:${match.awayScore}`}</b>
           <button type="button" onClick={() => onTeamOpen(match.awayTeamId)}>
-            <img src={match.awayLogoUrl ?? "/fallback-team-logo.svg"} alt={match.awayTeamName} />
+            <TeamLogo logoUrl={match.awayLogoUrl} name={match.awayTeamName} />
             <strong>{match.awayTeamShortName}</strong>
           </button>
         </div>
-        <p>Тур {match.round} · {match.venue ?? "Стадион уточняется"}</p>
+        <p>Тур {match.round}</p>
       </div>
       <section className="detail-card">
         <h2>События</h2>
@@ -852,7 +887,7 @@ function MatchDetailScreen({
           const team = event.teamId === homeTeam?.id ? homeTeam : awayTeam;
           return (
             <button type="button" className="event-line" key={event.id} onClick={() => onPlayerOpen(event.scorerPlayerId)}>
-              <img src={team?.logoUrl ?? "/fallback-team-logo.svg"} alt={team?.name ?? "Команда"} />
+              <TeamLogo logoUrl={team?.logoUrl ?? null} name={team?.name ?? "Команда"} />
               <span>
                 <strong>{event.scorerName}</strong>
                 {event.assistName ? <small>пас: {event.assistName}</small> : <small>{event.eventType === "penalty" ? "пенальти" : event.eventType === "own_goal" ? "автогол" : "без ассиста"}</small>}
@@ -896,7 +931,7 @@ function TeamProfileScreen({
   return (
     <section className="detail-screen">
       <div className="team-profile-hero">
-        <img src={team.logoUrl ?? "/fallback-team-logo.svg"} alt={team.name} />
+        <TeamLogo logoUrl={team.logoUrl} name={team.name} />
         <div>
           <h1>{team.name}</h1>
           <span>{team.city ?? "Команда турнира"}</span>
@@ -956,7 +991,7 @@ function PlayerProfileScreen({
   return (
     <section className="detail-screen">
       <div className="team-profile-hero">
-        <img src={team?.logoUrl ?? "/fallback-team-logo.svg"} alt={team?.name ?? "Команда"} />
+        <TeamLogo logoUrl={team?.logoUrl ?? null} name={team?.name ?? "Команда"} />
         <div>
           <h1>{player.fullName}</h1>
           <button type="button" className="link-button" onClick={() => team && onTeamOpen(team.id)}>{team?.name ?? "Команда"}</button>
@@ -1017,26 +1052,55 @@ function ProfileView(props: {
   onSelect: (teamId: string | null) => void;
   onSave: () => void;
 }) {
+  const [isFavoritePickerOpen, setIsFavoritePickerOpen] = useState(false);
+  const currentTeam = props.teams.find((team) => team.id === props.selectedTeamId) ?? null;
+
   return (
     <section className="profile">
       <img src={TOURNAMENT_LOGO_URL} alt="Логотип турнира" />
       <h2>
         {props.user.firstName} {props.user.lastName}
       </h2>
-      <label>
-        Любимая команда
-        <select value={props.selectedTeamId ?? ""} onChange={(event) => props.onSelect(event.target.value || null)}>
-          <option value="">Не выбрана</option>
-          {props.teams.map((team) => (
-            <option key={team.id} value={team.id}>
-              {team.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <button className="primary" disabled={props.saving} onClick={props.onSave}>
-        Сохранить
+      <button className="favorite-team-card" type="button" onClick={() => setIsFavoritePickerOpen(true)}>
+        <span>Любимая команда</span>
+        <div>
+          <TeamLogo logoUrl={currentTeam?.logoUrl ?? null} name={currentTeam?.name ?? "Команда"} />
+          <strong>{currentTeam?.name ?? "Не выбрана"}</strong>
+        </div>
       </button>
+      {isFavoritePickerOpen ? (
+        <Modal title="Любимая команда" onClose={() => setIsFavoritePickerOpen(false)}>
+          <div className="team-picker team-picker-grid">
+            {props.teams.map((team) => (
+              <button
+                key={team.id}
+                type="button"
+                className={props.selectedTeamId === team.id ? "active" : ""}
+                onClick={() => props.onSelect(team.id)}
+              >
+                <TeamLogo logoUrl={team.logoUrl} name={team.name} />
+                <span>{team.shortName}</span>
+              </button>
+            ))}
+          </div>
+          <div className="modal-actions">
+            <button className="ghost bordered" type="button" onClick={() => setIsFavoritePickerOpen(false)}>
+              Отмена
+            </button>
+            <button
+              className="primary"
+              disabled={props.saving}
+              type="button"
+              onClick={() => {
+                void props.onSave();
+                setIsFavoritePickerOpen(false);
+              }}
+            >
+              Сохранить
+            </button>
+          </div>
+        </Modal>
+      ) : null}
     </section>
   );
 }
@@ -1057,7 +1121,6 @@ function AdminView(props: {
   const [playerTeamId, setPlayerTeamId] = useState(props.teams[0]?.id ?? "");
   const [round, setRound] = useState("1");
   const [kickoffAt, setKickoffAt] = useState("");
-  const [venue, setVenue] = useState("");
   const [homeTeamId, setHomeTeamId] = useState(props.teams[0]?.id ?? "");
   const [awayTeamId, setAwayTeamId] = useState(props.teams[1]?.id ?? "");
   const [adminMatches, setAdminMatches] = useState<PublicMatch[]>([]);
@@ -1207,12 +1270,11 @@ function AdminView(props: {
         body: JSON.stringify({
           round: Number(round),
           kickoffAt: kickoffAt ? new Date(kickoffAt).toISOString() : null,
-          venue: venue.trim() || null,
+          venue: null,
           homeTeamId,
           awayTeamId
         })
       });
-      setVenue("");
       onMessage("Матч добавлен");
       props.onDataChanged();
       await loadAdminData();
@@ -1356,7 +1418,6 @@ function AdminView(props: {
               </select>
             </label>
           </div>
-          <input value={venue} onChange={(event) => setVenue(event.target.value)} placeholder="Стадион или площадка" />
           <button className="primary" type="submit">
             Создать матч
           </button>
@@ -1393,7 +1454,7 @@ function AdminView(props: {
             <div className="team-picker">
               {playerTeams.map((team) => (
                 <button key={team.id} type="button" className={playerTeamId === team.id ? "active" : ""} onClick={() => setPlayerTeamId(team.id)}>
-                  <img src={team.logoUrl ?? "/fallback-team-logo.svg"} alt={team.name} />
+                  <TeamLogo logoUrl={team.logoUrl} name={team.name} />
                   <span>{team.shortName}</span>
                 </button>
               ))}
@@ -1435,7 +1496,7 @@ function AdminView(props: {
                 {resultTeams.map((team) => (
                   <section key={team.id}>
                     <div>
-                      <img src={team.logoUrl ?? "/fallback-team-logo.svg"} alt={team.name} />
+                      <TeamLogo logoUrl={team.logoUrl} name={team.name} />
                       <strong>{team.shortName}</strong>
                     </div>
                     <button

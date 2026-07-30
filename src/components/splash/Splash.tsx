@@ -40,8 +40,7 @@ export function Splash(props: {
   return (
     <main className="splash" style={{ "--accent": props.primaryColor } as React.CSSProperties}>
       <img className="splash-logo" src={props.logoUrl} alt={props.appName} />
-      <p>{greeting()}, {props.userName}</p>
-      <h1>{props.appName}</h1>
+      <h1>{greeting()}, {props.userName}</h1>
       {props.error ? (
         <>
           <span className="splash-error">{props.error}</span>
@@ -53,7 +52,7 @@ export function Splash(props: {
       ) : (
         <>
           <span>{phrases[phraseIndex]}</span>
-          <div className="loader" />
+          <div className="loader" aria-label="Загрузка" />
         </>
       )}
     </main>

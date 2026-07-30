@@ -338,8 +338,8 @@ declare
   v_last text;
 begin
   select first_name, last_name into v_first, v_last from public.app_users where id = p_user_id;
-  if nullif(trim(coalesce(v_first, '')), '') is null or nullif(trim(coalesce(v_last, '')), '') is null then
-    raise exception 'Privileged user must have first_name and last_name filled in app_users';
+  if nullif(trim(coalesce(v_first, '')), '') is null then
+    raise exception 'Privileged user must have first_name filled in app_users';
   end if;
 end;
 $$;

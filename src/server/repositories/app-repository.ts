@@ -40,18 +40,48 @@ function mapUser(row: DbRecord): AppUser {
 }
 
 export async function upsertAppUser(supabase: SupabaseClient, tgUser: TelegramUserPayload): Promise<AppUser> {
+  const { data: existing, error: existingError } = await supabase
+    .from("app_users")
+    .select("*")
+    .eq("telegram_id", tgUser.id)
+    .maybeSingle();
+
+  if (existingError) {
+    throw new Error(existingError.message);
+  }
+
+  if (existing) {
+    const existingRow = existing as DbRecord;
+    const firstName = asString(existingRow.first_name).trim() || tgUser.first_name;
+    const lastName = asNullableString(existingRow.last_name) ?? tgUser.last_name ?? null;
+    const { data, error } = await supabase
+      .from("app_users")
+      .update({
+        first_name: firstName,
+        last_name: lastName,
+        username: tgUser.username ?? asNullableString(existingRow.username),
+        last_seen_at: new Date().toISOString()
+      })
+      .eq("id", asString(existingRow.id))
+      .select("*")
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return mapUser(data as DbRecord);
+  }
+
   const { data, error } = await supabase
     .from("app_users")
-    .upsert(
-      {
-        telegram_id: tgUser.id,
-        first_name: tgUser.first_name,
-        last_name: tgUser.last_name ?? null,
-        username: tgUser.username ?? null,
-        last_seen_at: new Date().toISOString()
-      },
-      { onConflict: "telegram_id" }
-    )
+    .insert({
+      telegram_id: tgUser.id,
+      first_name: tgUser.first_name,
+      last_name: tgUser.last_name ?? null,
+      username: tgUser.username ?? null,
+      last_seen_at: new Date().toISOString()
+    })
     .select("*")
     .single();
 
